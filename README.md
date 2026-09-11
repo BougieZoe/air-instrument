@@ -78,6 +78,44 @@ node scripts/generateSamples.mjs
 
 ---
 
+## Extending: realistic piano & new sample packs
+
+Audio code depends on interfaces in `src/audio/types.ts`, never on concrete
+classes — new sounds plug in without touching instrument logic.
+
+### Add a sample pack (e.g. Jazz Kit, 808 Mafia)
+
+1. Drop WAV files into `public/samples/<pack-name>/`
+2. Define a pack (see `src/instruments/AirSampler/sampleMap.ts`):
+   ```ts
+   export const jazzPack: SamplePack = {
+     id: "jazz-kit", name: "Jazz Kit",
+     pads: [{ id: "ride", label: "RIDE", src: "/samples/jazz/ride.wav", gain: 0.7 }],
+   };
+   ```
+3. Load it at runtime — cached buffers are reused, no reload of old packs:
+   ```ts
+   await engine.loadSamplePack(jazzPack);
+   ```
+
+### Swap in a realistic piano (sampled / SF2)
+
+1. Create a class implementing `IPianoEngine` (`noteOn` / `noteOff` / `releaseAll`),
+   e.g. `SampledPianoEngine` loading one `AudioBuffer` per note
+   (Salamander, MIDI.js, or any piano sample set)
+2. Swap it live — old voices are released automatically:
+   ```ts
+   engine.setPianoEngine(new SampledPianoEngine(engine.context, engine.pianoBus));
+   ```
+   `AirPiano` and cleanup code keep working unchanged.
+
+### Tune feel without code changes
+
+All magic numbers (gains, gesture thresholds, dwell/cooldown, smoothing)
+live in `src/config.ts`.
+
+---
+
 ## License
 
 MIT

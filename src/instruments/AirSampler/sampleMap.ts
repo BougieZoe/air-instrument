@@ -1,6 +1,11 @@
 import type { SampleDefinition } from "../../audio/SamplePlayer";
+import type { SamplePack } from "../../audio/types";
 
-export const sampleMap: SampleDefinition[] = [
+/** Built-in demo pack. Add new packs as SamplePack objects — no instrument changes needed. */
+export const trapPack: SamplePack = {
+  id: "trap-demo",
+  name: "Trap Demo",
+  pads: [
   { id: "kick", label: "KICK", src: "/samples/kick.wav", gain: 1.0 },
   { id: "snare", label: "SNARE", src: "/samples/snare.wav", gain: 0.82 },
   { id: "clap", label: "CLAP", src: "/samples/clap.wav", gain: 0.76 },
@@ -17,4 +22,8 @@ export const sampleMap: SampleDefinition[] = [
   { id: "chop", label: "CHOP", src: "/samples/chop.wav", gain: 0.68 },
   { id: "loop", label: "LOOP", src: "/samples/loop.wav", gain: 0.66 },
   { id: "air", label: "AIR", src: "/samples/air.wav", gain: 0.74 }
-];
+  ]
+};
+
+/** Pad list of the built-in pack, in grid order. */
+export const sampleMap: SampleDefinition[] = trapPack.pads;

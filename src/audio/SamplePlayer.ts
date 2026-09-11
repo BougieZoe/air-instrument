@@ -1,11 +1,14 @@
 import { SAMPLE_DEBOUNCE_S } from "../config";
+import type { SamplePack, SamplePadDefinition } from "./types";
 
-export type SampleDefinition = { id: string; label: string; src: string; gain?: number; chokeGroup?: string; };
+/** Backward-compatible alias. New code should use SamplePadDefinition / SamplePack. */
+export type SampleDefinition = SamplePadDefinition;
 
 export class SamplePlayer {
   private buffers      = new Map<string, AudioBuffer>();
   private lastTrigger  = new Map<string, number>();
   private activeChokes = new Map<string, AudioBufferSourceNode[]>();
+  currentPackId: string | null = null;
 
   constructor(private readonly context: AudioContext, private readonly output: GainNode) {}
 
@@ -16,6 +19,12 @@ export class SamplePlayer {
       const data = await response.arrayBuffer();
       this.buffers.set(s.id, await this.context.decodeAudioData(data));
     }));
+  }
+
+  /** Load a named pack. Switching packs keeps already-cached buffers. */
+  async loadPack(pack: SamplePack) {
+    await this.load(pack.pads);
+    this.currentPackId = pack.id;
   }
 
   trigger(sample: SampleDefinition, velocity = 0.85) {

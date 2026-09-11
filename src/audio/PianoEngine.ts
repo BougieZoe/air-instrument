@@ -1,3 +1,5 @@
+import type { IPianoEngine } from "./types";
+
 const NOTE_BASE: Record<string, number> = {
   C: -9,
   "C#": -8,
@@ -31,7 +33,7 @@ type Voice = {
   filter: BiquadFilterNode;
 };
 
-export class PianoEngine {
+export class PianoEngine implements IPianoEngine {
   private voices = new Map<string, Voice>();
 
   constructor(

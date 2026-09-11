@@ -13,7 +13,7 @@ import { InteractionController } from "../hand/InteractionController";
 import type { InteractionPoint } from "../hand/types";
 import { AirPiano } from "../instruments/AirPiano/AirPiano";
 import { AirSampler } from "../instruments/AirSampler/AirSampler";
-import { sampleMap } from "../instruments/AirSampler/sampleMap";
+import { trapPack } from "../instruments/AirSampler/sampleMap";
 import type { InstrumentHandle, InstrumentMode } from "../instruments/types";
 import { AudioReactive } from "../visuals/AudioReactive";
 import { InteractionFeedback } from "../visuals/InteractionFeedback";
@@ -56,7 +56,7 @@ export default function AirInstrument() {
   }, [tracker]);
 
   const ensureAudio = useCallback(async () => {
-    if (!audioRef.current) { audioRef.current = new AudioEngine(); await audioRef.current.loadSamples(sampleMap); }
+    if (!audioRef.current) { audioRef.current = new AudioEngine(); await audioRef.current.loadSamplePack(trapPack); }
     else await audioRef.current.resume();
     return audioRef.current;
   }, []);

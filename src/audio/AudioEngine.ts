@@ -4,6 +4,7 @@ import { AccompanimentPlayer } from "./AccompanimentPlayer";
 import { createGain } from "./mixer";
 import { PianoEngine } from "./PianoEngine";
 import { SamplePlayer, type SampleDefinition } from "./SamplePlayer";
+import type { IPianoEngine, SamplePack } from "./types";
 
 export class AudioEngine {
   readonly context: AudioContext;
@@ -15,7 +16,8 @@ export class AudioEngine {
   readonly analyserNode: AnalyserNode;
   readonly analyser: AudioAnalyser;
   readonly samples: SamplePlayer;
-  readonly piano: PianoEngine;
+  /** Swappable piano implementation — synth today, sampled/SF2 tomorrow. */
+  piano: IPianoEngine;
   readonly accompaniment: AccompanimentPlayer;
 
   constructor() {
@@ -45,5 +47,8 @@ export class AudioEngine {
 
   async resume() { if (this.context.state !== "running") await this.context.resume(); }
   async loadSamples(samples: SampleDefinition[]) { await this.resume(); await this.samples.load(samples); }
+  async loadSamplePack(pack: SamplePack) { await this.resume(); await this.samples.loadPack(pack); }
+  /** Swap the piano engine at runtime (e.g. synth → sampled). Releases old voices first. */
+  setPianoEngine(engine: IPianoEngine) { this.piano.releaseAll(); this.piano = engine; }
   getLevel() { return this.analyser.getLevel(); }
 }
