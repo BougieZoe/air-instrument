@@ -6,6 +6,10 @@ export type Point3 = {
 
 export type GestureName = "INDEX_POINT" | "PINCH" | "OPEN_HAND" | "UNKNOWN";
 
+/** MediaPipe landmark indices for the 5 fingertips: thumb, index, middle, ring, pinky. */
+export const FINGER_TIP_INDICES = [4, 8, 12, 16, 20] as const;
+export const FINGER_COUNT = FINGER_TIP_INDICES.length;
+
 export type HandInput = {
   id: string;
   handedness: "Left" | "Right" | "Unknown";
@@ -14,8 +18,13 @@ export type HandInput = {
   thumbTip: Point3;
   wrist: Point3;
   palm: Point3;
+  /** All 5 smoothed fingertips in FINGER_TIP_INDICES order. */
+  fingertips: Point3[];
+  /** Per-finger normalized speed (0-1), same order. Drives per-point velocity. */
+  fingerSpeeds: number[];
   gesture: GestureName;
   pinchStrength: number;
+  /** Index-finger speed, kept for gesture-level triggers and debug display. */
   speed: number;
   timestamp: number;
 };
@@ -24,6 +33,8 @@ export type InteractionState = "IDLE" | "HOVER" | "PRESS" | "RELEASE";
 
 export type InteractionPoint = {
   id: string;
+  /** Which finger of the hand (0=thumb … 4=pinky, FINGER_TIP_INDICES order). */
+  finger: number;
   x: number;
   y: number;
   z: number;

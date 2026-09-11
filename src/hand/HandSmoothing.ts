@@ -31,13 +31,20 @@ export class HandSmoothing {
       const thumbTip = smoothPoint(previous.thumbTip, hand.thumbTip, this.alpha);
       const wrist    = smoothPoint(previous.wrist,    hand.wrist,    this.alpha);
       const palm     = smoothPoint(previous.palm,     hand.palm,     this.alpha);
+      const fingertips = hand.fingertips.map((tip, i) =>
+        smoothPoint(previous.fingertips[i] ?? tip, tip, this.alpha));
 
       const dt = Math.max(MIN_FRAME_DT_MS, hand.timestamp - previous.timestamp);
+      const fingerSpeeds = fingertips.map((tip, i) => {
+        const prev = previous.fingertips[i] ?? tip;
+        return Math.min(1, Math.hypot(tip.x - prev.x, tip.y - prev.y) / (dt / 1000) / SPEED_NORM_FACTOR);
+      });
+
       const dx = indexTip.x - previous.indexTip.x;
       const dy = indexTip.y - previous.indexTip.y;
       const speed = Math.min(1, Math.hypot(dx, dy) / (dt / 1000) / SPEED_NORM_FACTOR);
 
-      const smoothed = { ...hand, indexTip, thumbTip, wrist, palm, speed };
+      const smoothed = { ...hand, indexTip, thumbTip, wrist, palm, fingertips, fingerSpeeds, speed };
       this.prev.set(hand.id, smoothed);
       return smoothed;
     });

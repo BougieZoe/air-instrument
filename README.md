@@ -40,6 +40,9 @@ Camera → MediaPipe Hand Landmarker → Smoothing → Coordinate Mapping
 ```
 
 - **Hand tracking** — MediaPipe Tasks Vision, runs entirely on your device
+- **All 5 fingertips** — every finger is an independent interaction point
+  (own hover / press / velocity), so chords and multi-finger drumming work
+  out of the box; cursors are color-coded per finger
 - **Audio** — Web Audio API, low-latency sample playback + dual-oscillator piano synth
 - **No backend** — everything is local, no data leaves your machine
 - **Mouse fallback** — works without a camera for testing

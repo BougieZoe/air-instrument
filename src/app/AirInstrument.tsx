@@ -11,6 +11,7 @@ import { CoordinateMapper } from "../hand/CoordinateMapper";
 import { HandTracker } from "../hand/HandTracker";
 import { InteractionController } from "../hand/InteractionController";
 import type { InteractionPoint } from "../hand/types";
+import { FINGER_COUNT } from "../hand/types";
 import { getInstrument, getInstruments } from "../instruments/registry";
 import { trapPack } from "../instruments/AirSampler/sampleMap";
 import type { InstrumentHandle, InstrumentMode } from "../instruments/types";
@@ -103,13 +104,15 @@ export default function AirInstrument() {
         const points: InteractionPoint[] = [];
         setTracking((prev) => { const next = hands.length > 0; return prev === next ? prev : next; });
         for (const hand of hands) {
-          liveIds.add(hand.id);
-          const base     = mapper.map(hand, rect, "IDLE");
-          const targetId = instrument.hitTest(base.x, base.y);
-          const point    = interactions.update(base, targetId);
-          instrument.handleInteraction(point, targetId);
-          points.push(point);
-          if (debug) setDebugInfo({ target: targetId, gesture: hand.gesture, confidence: hand.confidence, speed: hand.speed, z: hand.indexTip.z, state: point.state });
+          for (let finger = 0; finger < FINGER_COUNT; finger++) {
+            const base     = mapper.mapFinger(hand, finger, rect, "IDLE");
+            liveIds.add(base.id);
+            const targetId = instrument.hitTest(base.x, base.y);
+            const point    = interactions.update(base, targetId);
+            instrument.handleInteraction(point, targetId);
+            points.push(point);
+            if (debug && finger === 1) setDebugInfo({ target: targetId, gesture: hand.gesture, confidence: hand.confidence, speed: point.speed, z: point.z, state: point.state });
+          }
         }
         interactions.resetMissing(liveIds);
         pointsRef.current = points;

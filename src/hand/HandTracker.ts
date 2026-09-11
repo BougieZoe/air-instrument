@@ -2,6 +2,7 @@ import { FilesetResolver, HandLandmarker, type HandLandmarkerResult } from "@med
 import { GestureRecognizer } from "./GestureRecognizer";
 import { HandSmoothing } from "./HandSmoothing";
 import type { HandInput, Point3 } from "./types";
+import { FINGER_TIP_INDICES } from "./types";
 
 /** Raw output from MediaPipe before smoothing - speed is not yet computed */
 type RawHandInput = Omit<HandInput, "speed">;
@@ -77,6 +78,8 @@ export class HandTracker {
         indexTip:    landmarks[8]  as Point3,
         thumbTip:    landmarks[4]  as Point3,
         wrist:       landmarks[0]  as Point3,
+        fingertips:  FINGER_TIP_INDICES.map((tip) => ({ ...(landmarks[tip] as Point3) })),
+        fingerSpeeds: FINGER_TIP_INDICES.map(() => 0),
         palm: {
           x: (landmarks[0].x + landmarks[5].x + landmarks[17].x) / 3,
           y: (landmarks[0].y + landmarks[5].y + landmarks[17].y) / 3,

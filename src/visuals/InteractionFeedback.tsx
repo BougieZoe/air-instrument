@@ -19,6 +19,10 @@ export function InteractionFeedback({ pointsRef }: InteractionFeedbackProps) {
           node.style.left    = `${point.x}px`;
           node.style.top     = `${point.y}px`;
           node.style.opacity = String(Math.max(MIN_CURSOR_OPACITY, Math.min(1, point.confidence)));
+          // One hue per finger (thumb→pinky) so simultaneous presses stay distinguishable
+          const hue = (point.finger * 72) % 360;
+          node.style.borderColor = `hsla(${hue}, 70%, 82%, 0.9)`;
+          if (point.state === "PRESS") node.style.background = `hsla(${hue}, 70%, 70%, 0.35)`;
           return node;
         }));
       }
