@@ -1,60 +1,83 @@
-# Zoe OS · Digital Phantom — Build Log & Unfinished Attempt
-![demo](./demo.gif)
-> One full day. Four AIs. This is what we got. Not what was imagined.
+# Air Instrument
 
-## What I was trying to build
+> Play music with your hands in the air.
 
-A black space. No UI chrome. No landing page.
+A local-first interactive music instrument that runs in your browser. Hold your hand up to the camera — your finger becomes the controller.
 
-Particles drift in from the void, slowly converge, and condense into a human silhouette — Zoe.
-She breathes. Particles flow. She is ambient, present, slightly cold.
-One input at the bottom: `speak to Zoe`.
-When you type, the particle field reacts — turbulence on sharp questions, stillness on silence.
-She is connected to an LLM with a real personality: trilingual, direct, INTP, Scanner-type, Hainan/Fukuoka perspective.
-
-Think: *Ghost in the Shell* title sequence energy — but interactive and personal.
-
-## What actually happened
-
-One full day. Four AIs. Multiple attempts. Honest record:
-
-| AI | Role | Result |
-|----|------|--------|
-| **GPT-4V** | Initial concept exploration | Good at describing the vision. Poor at translating it to Three.js geometry math. |
-| **Gemini** | Generated a reference image of the target aesthetic | The image looked right. The code did not match the image. |
-| **DeepSeek v4** | Body shaping math, Bloom post-processing | Got closest. Recognizable female silhouette. Camera frustum issues remained. |
-| **Claude** | Debug partner, file rewrites | Fast at fixing errors. Same fundamental bottleneck. |
-
-The core problem nobody solved: describing a *visual feeling* to an AI and getting back correct Three.js camera + particle math that actually produces that feeling.
-
-## Current state
-
-`src/components/Zoe/ZoeScene.tsx` contains:
-
-- 50,000 particles across a body-shaped skeleton
-- Simplex noise for organic breathing movement
-- Additive blending for the glow effect
-- Bloom post-processing via `@react-three/postprocessing`
-- Gemini API with a real system prompt (Zoe's actual personality)
-
-**What's not ideal:** the silhouette reads as a vertical blur rather than a recognizable human form.
-
-## The hypothesis I haven't tested yet
-
-Maybe describing 3D aesthetics to AI in natural language doesn't work — and never will. It might require:
-
-- Mathematical language: define ellipsoids with precise semi-axes
-- A reference 3D model (GLB/OBJ) to sample point positions from
-- Building the shape in Blender first, exporting point positions, then animating in Three.js
-
-Vibe-coding works for UI and logic. For 3D spatial aesthetics, you need to speak the math directly — or give the AI a shape to copy, not a feeling to interpret.
-
-## Stack
-
-React + Vite + TypeScript · Three.js via `@react-three/fiber` · `simplex-noise` · `gsap` · Gemini 1.5 Flash API
+![Air Instrument](https://raw.githubusercontent.com/BougieZoe/air-instrument/main/public/favicon.svg)
 
 ---
 
-*Built by Zoe Li · Hainan, China · May 2026*
+## Two instruments. No hardware required.
 
-> 「不知道是不是要用数学语言给AI指令，才能达到脑海里那种效果。」
+### Air Sampler
+A floating 4×4 pad grid with a built-in trap/hip-hop demo pack. Point your index finger at a pad and hold — it triggers. 16 original synthesized sounds included out of the box.
+
+### Air Piano
+A floating 2-octave piano keyboard (C3–C5). Polyphonic. Move your finger across the keys to play melodies. Import any local audio file and play along while it loops.
+
+---
+
+## Getting started
+
+```bash
+npm install
+npm run dev
+```
+
+Open `http://localhost:5173`, click **START**, allow camera access.
+
+> Hand tracking requires Chrome or a Chromium-based browser for best results.
+
+---
+
+## How it works
+
+```
+Camera → MediaPipe Hand Landmarker → Smoothing → Coordinate Mapping
+  → Hit Testing → Interaction State (HOVER / PRESS)
+    → Web Audio API (samples / synth / accompaniment)
+```
+
+- **Hand tracking** — MediaPipe Tasks Vision, runs entirely on your device
+- **Audio** — Web Audio API, low-latency sample playback + dual-oscillator piano synth
+- **No backend** — everything is local, no data leaves your machine
+- **Mouse fallback** — works without a camera for testing
+
+---
+
+## Stack
+
+- React 19 + TypeScript
+- Vite
+- Tailwind CSS
+- MediaPipe Tasks Vision (Hand Landmarker)
+- Web Audio API
+
+---
+
+## Import your own music
+
+In Piano mode, click **IMPORT AUDIO** to load any `.mp3`, `.wav`, or `.m4a` file from your computer. The track plays as accompaniment while you play the floating piano keys.
+
+---
+
+## Debug mode
+
+Click **◎ DEBUG** in the top-right corner to see live tracking data: FPS, detected gesture, fingertip coordinates, confidence score, and current interaction state.
+
+---
+
+## Demo sounds
+
+All 16 included sounds are original synthesized samples generated locally — no copyrighted audio bundled. To regenerate them:
+
+```bash
+node scripts/generateSamples.mjs
+```
+
+---
+
+## License
+
+MIT
