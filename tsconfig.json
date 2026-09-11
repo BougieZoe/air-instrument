@@ -1,0 +1,37 @@
+{
+  "compilerOptions": {
+    "target": "ESNext",
+    "useDefineForClassFields": true,
+    "lib": ["DOM", "DOM.Iterable", "ESNext"],
+    "allowJs": true,
+    "skipLibCheck": true,
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "strict": true,
+    "forceConsistentCasingInFileNames": true,
+    "module": "ESNext",
+    "moduleResolution": "Node",
+    "ignoreDeprecations": "6.0",
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "noEmit": true,
+    "jsx": "react-jsx"
+  },
+  "include": [
+    "src/App.tsx",
+    "src/main.jsx",
+    "src/app/**/*",
+    "src/audio/**/*",
+    "src/components/AudioImport.tsx",
+    "src/components/CameraView.tsx",
+    "src/components/DebugOverlay.tsx",
+    "src/components/ModeSwitcher.tsx",
+    "src/components/StartScreen.tsx",
+    "src/components/TrackingIndicator.tsx",
+    "src/hand/**/*",
+    "src/instruments/**/*",
+    "src/visuals/**/*",
+    "src/vite-env.d.ts"
+  ],
+  "references": [{ "path": "./tsconfig.node.json" }]
+}

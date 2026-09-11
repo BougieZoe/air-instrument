@@ -1,0 +1,54 @@
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Geist+Mono:wght@400;500;600&family=EB+Garamond:ital,wght@0,400..800;1,400..800&family=Homemade+Apple&family=Noto+Serif+JP:wght@400;700&family=Noto+Serif+SC:wght@400;700&display=swap");
+
+:root {
+  /* Zoe OS Midnight Palette */
+  --color-bg: #000000; 
+  --color-bg-elevated: #050505;
+  --color-surface: rgba(10, 10, 10, 0.85);
+  --color-text: #e5e5e5; 
+  --color-text-strong: #ffffff;
+  --color-muted: #737373;
+  --color-muted-soft: #262626;
+  --color-line: rgba(255, 255, 255, 0.05);
+  --color-line-strong: rgba(255, 255, 255, 0.1);
+  --color-grid: rgba(255, 255, 255, 0.02);
+  
+  /* Leather & Natural Textures */
+  --color-leather: #242424;
+  --color-leather-grain: rgba(0,0,0,0.1);
+  --color-accent: #ff0033;
+  --color-accent-soft: rgba(255, 0, 51, 0.03);
+
+  /* Typography Layers */
+  --font-display: "EB Garamond", serif;
+  --font-body: "Inter", system-ui, sans-serif;
+  --font-mono: "Geist Mono", monospace;
+  --font-hand: "Homemade Apple", cursive; /* Human, imperfect touch */
+  
+  /* Multi-lingual Serif Defaults */
+  --font-serif-jp: "Noto Serif JP", serif;
+  --font-serif-sc: "Noto Serif SC", serif;
+
+  --type-h1: clamp(4rem, 15vw, 10rem);
+  --type-h2: clamp(3rem, 10vw, 6rem);
+  
+  --leading-tight: 0.85;
+  --leading-title: 1.05;
+  --leading-body: 1.7;
+
+  /* Physicality */
+  --radius-sm: 2px;
+  --radius-md: 12px;
+  --radius-lg: 32px;
+  
+  --shadow-physical: 
+    0 1px 2px rgba(0,0,0,0.02),
+    0 4px 12px rgba(0,0,0,0.03),
+    0 12px 32px rgba(0,0,0,0.04);
+    
+  --backdrop-blur: 32px;
+}
+
+
+
+
