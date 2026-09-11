@@ -27,10 +27,13 @@ export class InteractionController {
     const dwellTime = now - dwellStart;
     const cooledDown = now - previous.lastPressAt > COOLDOWN_MS;
 
+    // PINCH is a thumb+index gesture: only fingers 0/1 answer to it.
+    // Dwell / fast-move / push-in work for all 5 fingers independently.
+    const pinch = point.gesture === "PINCH" && point.finger <= 1;
     const wantsPress =
       targetId !== null &&
       cooledDown &&
-      (point.gesture === "PINCH" ||
+      (pinch ||
         point.speed > SPEED_THRESHOLD ||
         point.z < Z_THRESHOLD ||
         dwellTime > DWELL_MS);
