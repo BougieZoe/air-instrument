@@ -114,6 +114,20 @@ classes — new sounds plug in without touching instrument logic.
 All magic numbers (gains, gesture thresholds, dwell/cooldown, smoothing)
 live in `src/config.ts`.
 
+### Add a whole new instrument (e.g. Air Drums, Air Guitar)
+
+Instruments are plugins. The registry (`src/instruments/registry.ts`) is the
+single source of truth — the mode switcher and stage render from it:
+
+1. Build a component satisfying `InstrumentHandle` (`hitTest` /
+   `handleInteraction` / `reset`) and receiving `InstrumentProps`
+   (see `AirSampler` for the reference implementation)
+2. Register it in one line:
+   ```ts
+   registerInstrument({ mode: "drums", label: "DRUMS", component: AirDrums });
+   ```
+3. Done — it appears in the switcher, hit-testing and cleanup work unchanged.
+
 ---
 
 ## License

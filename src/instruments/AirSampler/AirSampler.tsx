@@ -1,13 +1,11 @@
 import { forwardRef, useImperativeHandle, useRef } from "react";
-import type { MutableRefObject } from "react";
 import { VELOCITY_HAND_MIN, VELOCITY_HAND_RANGE, VELOCITY_MOUSE } from "../../config";
-import type { AudioEngine } from "../../audio/AudioEngine";
 import type { InteractionPoint } from "../../hand/types";
-import type { InstrumentHandle } from "../types";
+import type { InstrumentHandle, InstrumentProps } from "../types";
 import { SamplePad } from "./SamplePad";
 import { sampleMap } from "./sampleMap";
 
-type AirSamplerProps = { audioRef: MutableRefObject<AudioEngine | null>; onFirstInteraction: () => void; };
+type AirSamplerProps = InstrumentProps;
 
 export const AirSampler = forwardRef<InstrumentHandle, AirSamplerProps>(({ audioRef, onFirstInteraction }, ref) => {
   const padRefs             = useRef(new Map<string, HTMLButtonElement>());

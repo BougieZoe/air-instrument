@@ -1,7 +1,12 @@
+import type { ForwardRefExoticComponent, MutableRefObject, RefAttributes } from "react";
+import type { AudioEngine } from "../audio/AudioEngine";
 import type { InteractionPoint } from "../hand/types";
 
-/** All available instrument modes. Add new modes here to extend. */
-export type InstrumentMode = "sampler" | "piano";
+/**
+ * Instrument id. A plain string — the instrument registry (registry.ts) is the
+ * source of truth, not this type. Registering a new instrument needs no type edits.
+ */
+export type InstrumentMode = string;
 
 /**
  * Shared contract between AirInstrument and every instrument surface.
@@ -14,4 +19,24 @@ export type InstrumentHandle = {
   handleInteraction: (point: InteractionPoint, targetId: string | null) => boolean;
   /** Reset all hover/press visual states (called on mode switch). */
   reset: () => void;
+};
+
+/** Props every instrument component receives. Keep in sync — one shape for all. */
+export type InstrumentProps = {
+  audioRef: MutableRefObject<AudioEngine | null>;
+  onFirstInteraction: () => void;
+};
+
+export type InstrumentComponent = ForwardRefExoticComponent<InstrumentProps & RefAttributes<InstrumentHandle>>;
+
+/**
+ * Plugin descriptor. Adding an instrument = implementing InstrumentHandle +
+ * calling registerInstrument() — no edits to AirInstrument or ModeSwitcher.
+ */
+export type InstrumentPlugin = {
+  /** Unique id, e.g. "sampler". Used as InstrumentMode and data-mode. */
+  mode: string;
+  /** Uppercase label shown in the mode switcher, e.g. "SAMPLER". */
+  label: string;
+  component: InstrumentComponent;
 };

@@ -11,8 +11,7 @@ import { CoordinateMapper } from "../hand/CoordinateMapper";
 import { HandTracker } from "../hand/HandTracker";
 import { InteractionController } from "../hand/InteractionController";
 import type { InteractionPoint } from "../hand/types";
-import { AirPiano } from "../instruments/AirPiano/AirPiano";
-import { AirSampler } from "../instruments/AirSampler/AirSampler";
+import { getInstrument, getInstruments } from "../instruments/registry";
 import { trapPack } from "../instruments/AirSampler/sampleMap";
 import type { InstrumentHandle, InstrumentMode } from "../instruments/types";
 import { AudioReactive } from "../visuals/AudioReactive";
@@ -149,6 +148,8 @@ export default function AirInstrument() {
 
   const instruction = !cameraReady ? "Mouse fallback is active." : !tracking ? "Raise your hand." : hasInteracted ? "" : "Touch the air.";
 
+  const activePlugin = getInstrument(mode) ?? getInstruments()[0];
+
   return (
     <main className="air-instrument" ref={stageRef}>
       <CameraView ref={videoRef} hasCamera={cameraReady} />
@@ -160,8 +161,8 @@ export default function AirInstrument() {
           <button type="button" className="debug-toggle" onClick={() => setDebug((v) => !v)} title="Toggle debug overlay">{debug ? "◉ DEBUG" : "◎ DEBUG"}</button>
         </div>
       </header>
-      <div className="instrument-space" data-mode={mode}>
-        {mode === "sampler" ? (<AirSampler ref={instrumentRef} audioRef={audioRef} onFirstInteraction={() => setHasInteracted(true)} />) : (<AirPiano ref={instrumentRef} audioRef={audioRef} onFirstInteraction={() => setHasInteracted(true)} />)}
+      <div className="instrument-space" data-mode={activePlugin.mode}>
+        <activePlugin.component ref={instrumentRef} audioRef={audioRef} onFirstInteraction={() => setHasInteracted(true)} />
       </div>
       <AudioImport state={accompaniment} onImport={importAudio} onPlay={() => updateAccompaniment("play")} onPause={() => updateAccompaniment("pause")} onRestart={() => updateAccompaniment("restart")}
         onVolume={(volume) => { audioRef.current?.accompaniment.setVolume(volume); if (audioRef.current) setAccompaniment({ ...audioRef.current.accompaniment.state }); }} />

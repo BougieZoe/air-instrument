@@ -1,13 +1,11 @@
 import { forwardRef, useImperativeHandle, useRef } from "react";
-import type { MutableRefObject } from "react";
 import { BLACK_KEY_INSET_RATIO, PIANO_VELOCITY_HAND_MIN, PIANO_VELOCITY_HAND_RANGE, PIANO_VELOCITY_MOUSE, WHITE_KEY_INSET_RATIO } from "../../config";
-import type { AudioEngine } from "../../audio/AudioEngine";
 import type { InteractionPoint } from "../../hand/types";
-import type { InstrumentHandle } from "../types";
+import type { InstrumentHandle, InstrumentProps } from "../types";
 import { PianoKey } from "./PianoKey";
 import { pianoLayout } from "./pianoLayout";
 
-type AirPianoProps = { audioRef: MutableRefObject<AudioEngine | null>; onFirstInteraction: () => void; };
+type AirPianoProps = InstrumentProps;
 
 export const AirPiano = forwardRef<InstrumentHandle, AirPianoProps>(({ audioRef, onFirstInteraction }, ref) => {
   const keyRefs             = useRef(new Map<string, HTMLButtonElement>());

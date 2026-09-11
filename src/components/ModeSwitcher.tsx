@@ -1,3 +1,4 @@
+import { getInstruments } from "../instruments/registry";
 import type { InstrumentMode } from "../instruments/types";
 
 type ModeSwitcherProps = { mode: InstrumentMode; onModeChange: (mode: InstrumentMode) => void; };
@@ -5,8 +6,9 @@ type ModeSwitcherProps = { mode: InstrumentMode; onModeChange: (mode: Instrument
 export function ModeSwitcher({ mode, onModeChange }: ModeSwitcherProps) {
   return (
     <div className="mode-switcher" role="tablist" aria-label="Instrument mode">
-      <button type="button" className={mode === "sampler" ? "active" : ""} onClick={() => onModeChange("sampler")} role="tab" aria-selected={mode === "sampler"}>SAMPLER</button>
-      <button type="button" className={mode === "piano" ? "active" : ""} onClick={() => onModeChange("piano")} role="tab" aria-selected={mode === "piano"}>PIANO</button>
+      {getInstruments().map((plugin) => (
+        <button key={plugin.mode} type="button" className={mode === plugin.mode ? "active" : ""} onClick={() => onModeChange(plugin.mode)} role="tab" aria-selected={mode === plugin.mode}>{plugin.label}</button>
+      ))}
     </div>
   );
 }
