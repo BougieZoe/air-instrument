@@ -1,3 +1,11 @@
+import {
+  INDEX_RAISE_DELTA,
+  OPEN_HAND_INDEX_DIST,
+  OPEN_HAND_THUMB_DIST,
+  PINCH_MIN_DIST,
+  PINCH_RANGE,
+  PINCH_THRESHOLD,
+} from "../config";
 import type { GestureName, HandInput, Point3 } from "./types";
 
 const distance = (a: Point3, b: Point3) =>
@@ -9,22 +17,18 @@ export class GestureRecognizer {
     pinchStrength: number;
   } {
     const pinchDistance = distance(input.indexTip, input.thumbTip);
-    const pinchStrength = Math.max(0, Math.min(1, 1 - (pinchDistance - 0.035) / 0.085));
-    const indexRaised = input.indexTip.y < input.palm.y - 0.03;
-    const handOpen = distance(input.indexTip, input.wrist) > 0.22 && distance(input.thumbTip, input.wrist) > 0.16;
+    const pinchStrength = Math.max(
+      0,
+      Math.min(1, 1 - (pinchDistance - PINCH_MIN_DIST) / PINCH_RANGE)
+    );
+    const indexRaised = input.indexTip.y < input.palm.y - INDEX_RAISE_DELTA;
+    const handOpen =
+      distance(input.indexTip, input.wrist) > OPEN_HAND_INDEX_DIST &&
+      distance(input.thumbTip, input.wrist) > OPEN_HAND_THUMB_DIST;
 
-    if (pinchStrength > 0.64) {
-      return { gesture: "PINCH", pinchStrength };
-    }
-
-    if (indexRaised) {
-      return { gesture: "INDEX_POINT", pinchStrength };
-    }
-
-    if (handOpen) {
-      return { gesture: "OPEN_HAND", pinchStrength };
-    }
-
+    if (pinchStrength > PINCH_THRESHOLD) return { gesture: "PINCH", pinchStrength };
+    if (indexRaised) return { gesture: "INDEX_POINT", pinchStrength };
+    if (handOpen) return { gesture: "OPEN_HAND", pinchStrength };
     return { gesture: "UNKNOWN", pinchStrength };
   }
 }

@@ -1,50 +1,45 @@
+import { MIN_FRAME_DT_MS, SMOOTHING_ALPHA, SPEED_NORM_FACTOR } from "../config";
 import type { HandInput, Point3 } from "./types";
-
-type SmoothedRecord = {
-  hand: HandInput;
-  last: Point3;
-};
 
 const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
 
-const smoothPoint = (previous: Point3, next: Point3, alpha: number): Point3 => ({
-  x: lerp(previous.x, next.x, alpha),
-  y: lerp(previous.y, next.y, alpha),
-  z: lerp(previous.z, next.z, alpha)
+const smoothPoint = (prev: Point3, next: Point3, alpha: number): Point3 => ({
+  x: lerp(prev.x, next.x, alpha),
+  y: lerp(prev.y, next.y, alpha),
+  z: lerp(prev.z, next.z, alpha),
 });
 
 export class HandSmoothing {
-  private records = new Map<string, SmoothedRecord>();
+  private prev = new Map<string, HandInput>();
 
-  constructor(private readonly alpha = 0.42) {}
+  constructor(private readonly alpha = SMOOTHING_ALPHA) {}
 
-  smooth(hands: HandInput[]) {
-    const liveIds = new Set(hands.map((hand) => hand.id));
-
-    for (const id of this.records.keys()) {
-      if (!liveIds.has(id)) {
-        this.records.delete(id);
-      }
+  smooth(hands: HandInput[]): HandInput[] {
+    const liveIds = new Set(hands.map((h) => h.id));
+    for (const id of this.prev.keys()) {
+      if (!liveIds.has(id)) this.prev.delete(id);
     }
 
     return hands.map((hand) => {
-      const previous = this.records.get(hand.id);
+      const previous = this.prev.get(hand.id);
       if (!previous) {
-        this.records.set(hand.id, { hand, last: hand.indexTip });
+        this.prev.set(hand.id, hand);
         return hand;
       }
 
-      const indexTip = smoothPoint(previous.hand.indexTip, hand.indexTip, this.alpha);
-      const thumbTip = smoothPoint(previous.hand.thumbTip, hand.thumbTip, this.alpha);
-      const wrist = smoothPoint(previous.hand.wrist, hand.wrist, this.alpha);
-      const palm = smoothPoint(previous.hand.palm, hand.palm, this.alpha);
-      const dt = Math.max(12, hand.timestamp - previous.hand.timestamp);
-      const dx = indexTip.x - previous.last.x;
-      const dy = indexTip.y - previous.last.y;
-      const speed = Math.min(1, Math.hypot(dx, dy) / (dt / 1000) / 2.4);
-      const nextHand = { ...hand, indexTip, thumbTip, wrist, palm, speed };
-      this.records.set(hand.id, { hand: nextHand, last: indexTip });
-      return nextHand;
+      const indexTip = smoothPoint(previous.indexTip, hand.indexTip, this.alpha);
+      const thumbTip = smoothPoint(previous.thumbTip, hand.thumbTip, this.alpha);
+      const wrist    = smoothPoint(previous.wrist,    hand.wrist,    this.alpha);
+      const palm     = smoothPoint(previous.palm,     hand.palm,     this.alpha);
+
+      const dt = Math.max(MIN_FRAME_DT_MS, hand.timestamp - previous.timestamp);
+      const dx = indexTip.x - previous.indexTip.x;
+      const dy = indexTip.y - previous.indexTip.y;
+      const speed = Math.min(1, Math.hypot(dx, dy) / (dt / 1000) / SPEED_NORM_FACTOR);
+
+      const smoothed = { ...hand, indexTip, thumbTip, wrist, palm, speed };
+      this.prev.set(hand.id, smoothed);
+      return smoothed;
     });
   }
 }

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { GAIN_ACCOMPANIMENT_DEFAULT } from "../config";
 import { AudioEngine } from "../audio/AudioEngine";
 import { AudioImport } from "../components/AudioImport";
 import { CameraView } from "../components/CameraView";
@@ -11,72 +12,52 @@ import { HandTracker } from "../hand/HandTracker";
 import { InteractionController } from "../hand/InteractionController";
 import type { InteractionPoint } from "../hand/types";
 import { AirPiano } from "../instruments/AirPiano/AirPiano";
-import { AirSampler, type InstrumentHandle } from "../instruments/AirSampler/AirSampler";
+import { AirSampler } from "../instruments/AirSampler/AirSampler";
 import { sampleMap } from "../instruments/AirSampler/sampleMap";
+import type { InstrumentHandle, InstrumentMode } from "../instruments/types";
 import { AudioReactive } from "../visuals/AudioReactive";
 import { InteractionFeedback } from "../visuals/InteractionFeedback";
 
-export type InstrumentMode = "sampler" | "piano";
+type AccompanimentViewState = { fileName: string | null; isPlaying: boolean; volume: number; };
+const emptyAccompanimentState: AccompanimentViewState = { fileName: null, isPlaying: false, volume: GAIN_ACCOMPANIMENT_DEFAULT };
 
-type AccompanimentViewState = {
-  fileName: string | null;
-  isPlaying: boolean;
-  volume: number;
-};
-
-const emptyAccompanimentState: AccompanimentViewState = {
-  fileName: null,
-  isPlaying: false,
-  volume: 0.62
-};
+type DebugInfo = { target: string | null; gesture: string; confidence: number; speed: number; z: number; state: string; };
+const emptyDebugInfo: DebugInfo = { target: null, gesture: "UNKNOWN", confidence: 0, speed: 0, z: 0, state: "IDLE" };
 
 export default function AirInstrument() {
-  const [started, setStarted] = useState(false);
-  const [starting, setStarting] = useState(false);
-  const [mode, setMode] = useState<InstrumentMode>("sampler");
-  const [cameraReady, setCameraReady] = useState(false);
-  const [tracking, setTracking] = useState(false);
-  const [firstInteraction, setFirstInteraction] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [debug, setDebug] = useState(() => new URLSearchParams(window.location.search).has("debug"));
-  const [fps, setFps] = useState(0);
-  const [debugTarget, setDebugTarget] = useState<string | null>(null);
-  const [debugGesture, setDebugGesture] = useState("UNKNOWN");
-  const [debugConfidence, setDebugConfidence] = useState(0);
-  const [debugSpeed, setDebugSpeed] = useState(0);
-  const [debugZ, setDebugZ] = useState(0);
-  const [debugState, setDebugState] = useState("IDLE");
+  const [started,       setStarted]       = useState(false);
+  const [starting,      setStarting]      = useState(false);
+  const [mode,          setMode]          = useState<InstrumentMode>("sampler");
+  const [cameraReady,   setCameraReady]   = useState(false);
+  const [tracking,      setTracking]      = useState(false);
+  const [hasInteracted, setHasInteracted] = useState(false);
+  const [error,         setError]         = useState<string | null>(null);
+  const [debug,         setDebug]         = useState(() => new URLSearchParams(window.location.search).has("debug"));
+  const [fps,           setFps]           = useState(0);
+  const [debugInfo,     setDebugInfo]     = useState<DebugInfo>(emptyDebugInfo);
   const [accompaniment, setAccompaniment] = useState<AccompanimentViewState>(emptyAccompanimentState);
 
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const stageRef = useRef<HTMLDivElement>(null);
+  const videoRef      = useRef<HTMLVideoElement>(null);
+  const stageRef      = useRef<HTMLDivElement>(null);
   const instrumentRef = useRef<InstrumentHandle>(null);
-  const pointsRef = useRef<InteractionPoint[]>([]);
-  const audioRef = useRef<AudioEngine | null>(null);
-  const streamRef = useRef<MediaStream | null>(null);
-  const frameRef = useRef(0);
+  const pointsRef     = useRef<InteractionPoint[]>([]);
+  const audioRef      = useRef<AudioEngine | null>(null);
+  const streamRef     = useRef<MediaStream | null>(null);
+  const frameRef      = useRef(0);
   const frameCountRef = useRef(0);
-  const lastFpsAtRef = useRef(performance.now());
+  const lastFpsAtRef  = useRef(performance.now());
 
-  const tracker = useMemo(() => new HandTracker(), []);
-  const mapper = useMemo(() => new CoordinateMapper(), []);
+  const tracker      = useMemo(() => new HandTracker(), []);
+  const mapper       = useMemo(() => new CoordinateMapper(), []);
   const interactions = useMemo(() => new InteractionController(), []);
 
-  // Pre-init tracker in background as soon as app loads — don't block START
   useEffect(() => {
-    tracker.init().then(() => {
-      console.log("[HandTracker] pre-init done, status:", tracker.status);
-    });
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    tracker.init().then(() => console.log("[HandTracker] pre-init done, status:", tracker.status));
+  }, [tracker]);
 
   const ensureAudio = useCallback(async () => {
-    if (!audioRef.current) {
-      audioRef.current = new AudioEngine();
-      await audioRef.current.loadSamples(sampleMap);
-    } else {
-      await audioRef.current.resume();
-    }
+    if (!audioRef.current) { audioRef.current = new AudioEngine(); await audioRef.current.loadSamples(sampleMap); }
+    else await audioRef.current.resume();
     return audioRef.current;
   }, []);
 
@@ -85,31 +66,16 @@ export default function AirInstrument() {
     setError(null);
     try {
       const engine = await ensureAudio();
-
-      // Request camera — tracker is already initing/inited in background
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: "user", width: { ideal: 1280 }, height: { ideal: 800 } },
-        audio: false
-      });
+      const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user", width: { ideal: 1280 }, height: { ideal: 800 } }, audio: false });
       streamRef.current = stream;
-
-      // Mount the instrument UI first
       setStarted(true);
       setCameraReady(true);
       await engine.resume();
-
-      // Attach stream after React renders the video element
-      setTimeout(() => {
+      requestAnimationFrame(() => {
         const video = videoRef.current;
-        if (video) {
-          video.srcObject = stream;
-          video.play().catch(console.warn);
-          console.log("[Camera] stream attached");
-        } else {
-          console.error("[Camera] videoRef.current is null");
-        }
-      }, 80);
-
+        if (video) { video.srcObject = stream; video.play().catch(console.warn); console.log("[Camera] stream attached"); }
+        else console.error("[Camera] videoRef.current is null after mount");
+      });
     } catch (startError) {
       setStarted(true);
       setCameraReady(false);
@@ -119,83 +85,47 @@ export default function AirInstrument() {
     }
   }, [ensureAudio]);
 
-  const handleModeChange = (nextMode: InstrumentMode) => {
-    instrumentRef.current?.reset();
-    setMode(nextMode);
-  };
+  const handleModeChange = (nextMode: InstrumentMode) => { instrumentRef.current?.reset(); setMode(nextMode); };
 
   useEffect(() => {
-    const onKey = (event: KeyboardEvent) => {
-      if (event.key.toLowerCase() === "d" && event.shiftKey && event.metaKey) {
-        setDebug((value) => !value);
-      }
-    };
+    const onKey = (e: KeyboardEvent) => { if (e.key.toLowerCase() === "d" && e.shiftKey && e.metaKey) setDebug((v) => !v); };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, []);
 
   useEffect(() => {
-    if (!started || !cameraReady) {
-      return;
-    }
-
+    if (!started || !cameraReady) return;
     const tick = () => {
-      const video = videoRef.current;
-      const stage = stageRef.current;
-      const instrument = instrumentRef.current;
+      const video = videoRef.current, stage = stageRef.current, instrument = instrumentRef.current;
       const liveIds = new Set<string>();
-
       if (video && stage && instrument) {
-        const rect = stage.getBoundingClientRect();
+        const rect  = stage.getBoundingClientRect();
         const hands = tracker.detect(video);
         const points: InteractionPoint[] = [];
-        setTracking((wasTracking) => {
-          const isTracking = hands.length > 0;
-          return wasTracking === isTracking ? wasTracking : isTracking;
-        });
-
+        setTracking((prev) => { const next = hands.length > 0; return prev === next ? prev : next; });
         for (const hand of hands) {
           liveIds.add(hand.id);
-          const base = mapper.map(hand, rect, "IDLE");
+          const base     = mapper.map(hand, rect, "IDLE");
           const targetId = instrument.hitTest(base.x, base.y);
-          const point = interactions.update(base, targetId);
+          const point    = interactions.update(base, targetId);
           instrument.handleInteraction(point, targetId);
           points.push(point);
-          if (debug) {
-            setDebugTarget(targetId);
-            setDebugGesture(hand.gesture);
-            setDebugConfidence(hand.confidence);
-            setDebugSpeed(hand.speed);
-            setDebugZ(hand.indexTip.z);
-            setDebugState(point.state);
-          }
+          if (debug) setDebugInfo({ target: targetId, gesture: hand.gesture, confidence: hand.confidence, speed: hand.speed, z: hand.indexTip.z, state: point.state });
         }
-
         interactions.resetMissing(liveIds);
         pointsRef.current = points;
       }
-
       frameCountRef.current += 1;
       const now = performance.now();
-      if (now - lastFpsAtRef.current > 600) {
-        setFps((frameCountRef.current * 1000) / (now - lastFpsAtRef.current));
-        frameCountRef.current = 0;
-        lastFpsAtRef.current = now;
-      }
+      if (now - lastFpsAtRef.current > 600) { setFps((frameCountRef.current * 1000) / (now - lastFpsAtRef.current)); frameCountRef.current = 0; lastFpsAtRef.current = now; }
       frameRef.current = requestAnimationFrame(tick);
     };
-
     frameRef.current = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(frameRef.current);
   }, [cameraReady, debug, interactions, mapper, started, tracker]);
 
   useEffect(() => {
-    return () => {
-      cancelAnimationFrame(frameRef.current);
-      streamRef.current?.getTracks().forEach((track) => track.stop());
-      tracker.dispose();
-      audioRef.current?.piano.releaseAll();
-    };
+    return () => { cancelAnimationFrame(frameRef.current); streamRef.current?.getTracks().forEach((t) => t.stop()); tracker.dispose(); audioRef.current?.piano.releaseAll(); };
   }, [tracker]);
 
   const importAudio = async (file: File) => {
@@ -207,33 +137,17 @@ export default function AirInstrument() {
 
   const updateAccompaniment = (action: "play" | "pause" | "restart", volume?: number) => {
     const engine = audioRef.current;
-    if (!engine) {
-      return;
-    }
-    if (action === "play") {
-      engine.accompaniment.play();
-    } else if (action === "pause") {
-      engine.accompaniment.pause();
-    } else {
-      engine.accompaniment.restart();
-    }
-    if (typeof volume === "number") {
-      engine.accompaniment.setVolume(volume);
-    }
+    if (!engine) return;
+    if (action === "play") engine.accompaniment.play();
+    else if (action === "pause") engine.accompaniment.pause();
+    else engine.accompaniment.restart();
+    if (typeof volume === "number") engine.accompaniment.setVolume(volume);
     setAccompaniment({ ...engine.accompaniment.state });
   };
 
-  if (!started) {
-    return <StartScreen onStart={start} error={error} starting={starting} />;
-  }
+  if (!started) return <StartScreen onStart={start} error={error} starting={starting} />;
 
-  const instruction = !cameraReady
-    ? "Mouse fallback is active."
-    : !tracking
-      ? "Raise your hand."
-      : firstInteraction
-        ? ""
-        : "Touch the air.";
+  const instruction = !cameraReady ? "Mouse fallback is active." : !tracking ? "Raise your hand." : hasInteracted ? "" : "Touch the air.";
 
   return (
     <main className="air-instrument" ref={stageRef}>
@@ -243,44 +157,18 @@ export default function AirInstrument() {
         <ModeSwitcher mode={mode} onModeChange={handleModeChange} />
         <div className="top-right">
           <TrackingIndicator tracking={tracking} cameraReady={cameraReady} />
-          <button
-            type="button"
-            className="debug-toggle"
-            onClick={() => setDebug((v) => !v)}
-            title="Toggle debug overlay"
-          >
-            {debug ? "◉ DEBUG" : "◎ DEBUG"}
-          </button>
+          <button type="button" className="debug-toggle" onClick={() => setDebug((v) => !v)} title="Toggle debug overlay">{debug ? "◉ DEBUG" : "◎ DEBUG"}</button>
         </div>
       </header>
-
       <div className="instrument-space" data-mode={mode}>
-        {mode === "sampler" ? (
-          <AirSampler ref={instrumentRef} audioRef={audioRef} onFirstInteraction={() => setFirstInteraction(true)} />
-        ) : (
-          <AirPiano ref={instrumentRef} audioRef={audioRef} onFirstInteraction={() => setFirstInteraction(true)} />
-        )}
+        {mode === "sampler" ? (<AirSampler ref={instrumentRef} audioRef={audioRef} onFirstInteraction={() => setHasInteracted(true)} />) : (<AirPiano ref={instrumentRef} audioRef={audioRef} onFirstInteraction={() => setHasInteracted(true)} />)}
       </div>
-
-      <AudioImport
-        state={accompaniment}
-        onImport={importAudio}
-        onPlay={() => updateAccompaniment("play")}
-        onPause={() => updateAccompaniment("pause")}
-        onRestart={() => updateAccompaniment("restart")}
-        onVolume={(volume) => {
-          const engine = audioRef.current;
-          engine?.accompaniment.setVolume(volume);
-          if (engine) {
-            setAccompaniment({ ...engine.accompaniment.state });
-          }
-        }}
-      />
-
+      <AudioImport state={accompaniment} onImport={importAudio} onPlay={() => updateAccompaniment("play")} onPause={() => updateAccompaniment("pause")} onRestart={() => updateAccompaniment("restart")}
+        onVolume={(volume) => { audioRef.current?.accompaniment.setVolume(volume); if (audioRef.current) setAccompaniment({ ...audioRef.current.accompaniment.state }); }} />
       <InteractionFeedback pointsRef={pointsRef} />
       <AudioReactive audioRef={audioRef} />
       {instruction && <div className="gesture-instruction">{instruction}</div>}
-      <DebugOverlay visible={debug} fps={fps} target={debugTarget} gesture={debugGesture} confidence={debugConfidence} speed={debugSpeed} z={debugZ} state={debugState} />
+      <DebugOverlay visible={debug} fps={fps} target={debugInfo.target} gesture={debugInfo.gesture} confidence={debugInfo.confidence} speed={debugInfo.speed} z={debugInfo.z} state={debugInfo.state} />
     </main>
   );
 }

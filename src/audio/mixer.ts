@@ -1,7 +1,5 @@
-export const createGain = (context: AudioContext, value: number) => {
+export const createGain = (context: AudioContext, value: number): GainNode => {
   const gain = context.createGain();
   gain.gain.value = value;
   return gain;
 };
-
-export const dbToGain = (db: number) => Math.pow(10, db / 20);
