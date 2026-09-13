@@ -8,7 +8,7 @@ A local-first browser music synthesizer — hold your hand up, your fingers beco
 
 [![Live Demo](https://img.shields.io/badge/LIVE-DEMO-blue?style=for-the-badge&logo=vercel&logoColor=white)](https://air-instrument-repo.vercel.app)
 
-![Air Instrument Screenshot](https://opencode.ai/uploads/3f4581e9f1a54f839b355c5f79a4c430)
+![Air Instrument Screenshot](public/screenshot.png)
 
 </div>
 
