@@ -325,6 +325,8 @@ button {
   backdrop-filter: blur(12px) saturate(1.1);
   -webkit-backdrop-filter: blur(12px) saturate(1.1);
   border-radius: 8px;
+  max-height: calc(100vh - 160px);
+  overflow-y: auto;
 }
 
 .sampler-shell {
@@ -435,7 +437,7 @@ button {
 
 .air-pad {
   position: relative;
-  height: clamp(82px, 9.5vh, 110px);
+  height: clamp(140px, 17vh, 190px);
   overflow: hidden;
   border: 1px solid rgba(255, 249, 238, 0.22);
   border-radius: 8px;
