@@ -1,0 +1,23 @@
+<svg width="256" height="256" viewBox="0 0 256 256" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <filter id="blur" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur in="SourceGraphic" stdDeviation="1.5"/>
+    </filter>
+  </defs>
+  <!-- frosted glass circle -->
+  <circle cx="128" cy="128" r="120" fill="rgba(255,255,255,0.08)" stroke="rgba(255,255,255,0.18)" stroke-width="2"/>
+  <!-- left dot -->
+  <circle cx="56" cy="128" r="10" fill="rgba(255,255,255,0.7)" filter="url(#blur)"/>
+  <!-- left short bar -->
+  <rect x="76" y="100" width="14" height="56" rx="7" fill="rgba(255,255,255,0.75)" filter="url(#blur)"/>
+  <!-- left mid bar -->
+  <rect x="100" y="76" width="14" height="104" rx="7" fill="rgba(255,255,255,0.85)"/>
+  <!-- center tall bar -->
+  <rect x="124" y="48" width="14" height="160" rx="7" fill="rgba(255,255,255,0.95)"/>
+  <!-- right mid bar -->
+  <rect x="148" y="76" width="14" height="104" rx="7" fill="rgba(255,255,255,0.85)"/>
+  <!-- right short bar -->
+  <rect x="172" y="100" width="14" height="56" rx="7" fill="rgba(255,255,255,0.75)" filter="url(#blur)"/>
+  <!-- right dot -->
+  <circle cx="204" cy="128" r="10" fill="rgba(255,255,255,0.7)" filter="url(#blur)"/>
+</svg>
