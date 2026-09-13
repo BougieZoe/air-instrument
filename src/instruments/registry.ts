@@ -10,7 +10,6 @@
  */
 import { AirPiano } from "./AirPiano/AirPiano";
 import { AirSampler } from "./AirSampler/AirSampler";
-import { AirDJ } from "./AirDJ/AirDJ";
 import type { InstrumentPlugin } from "./types";
 
 const registry = new Map<string, InstrumentPlugin>();
@@ -30,4 +29,3 @@ export function getInstruments(): InstrumentPlugin[] {
 // ─── Built-ins ──────────────────────────────────────────────────────────────
 registerInstrument({ mode: "sampler", label: "SAMPLER", component: AirSampler });
 registerInstrument({ mode: "piano", label: "PIANO", component: AirPiano });
-registerInstrument({ mode: "dj", label: "DJ", component: AirDJ });

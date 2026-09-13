@@ -327,8 +327,8 @@ button {
 }
 
 .sampler-shell {
-  width: min(88vw, 960px);
-  padding: 22px;
+  width: min(96vw, 1100px);
+  padding: 24px;
 }
 
 .instrument-title,
@@ -385,15 +385,56 @@ button {
   border-color: rgba(255, 249, 238, 0.35);
 }
 
+.midi-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.midi-btn {
+  background: rgba(255, 249, 238, 0.06);
+  border: 1px solid rgba(255, 249, 238, 0.12);
+  border-radius: 4px;
+  color: rgba(255, 249, 238, 0.45);
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  padding: 3px 8px;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+
+.midi-btn:hover {
+  background: rgba(255, 249, 238, 0.1);
+  color: rgba(255, 249, 238, 0.7);
+  border-color: rgba(255, 249, 238, 0.25);
+}
+
+.midi-btn.active {
+  background: rgba(80, 200, 120, 0.15);
+  color: #50c878;
+  border-color: rgba(80, 200, 120, 0.35);
+}
+
+.midi-device {
+  font-size: 8px;
+  color: rgba(255, 249, 238, 0.4);
+  font-weight: 600;
+  max-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .sampler-grid {
   display: grid;
-  grid-template-columns: repeat(8, minmax(82px, 1fr));
-  gap: 10px;
+  grid-template-columns: repeat(8, minmax(100px, 1fr));
+  gap: 12px;
 }
 
 .air-pad {
   position: relative;
-  height: clamp(72px, 8.5vw, 108px);
+  height: clamp(100px, 12vw, 155px);
   overflow: hidden;
   border: 1px solid rgba(255, 249, 238, 0.22);
   border-radius: 8px;
@@ -409,9 +450,9 @@ button {
 
 .air-pad span {
   position: absolute;
-  left: 13px;
-  top: 12px;
-  font-size: 10px;
+  left: 14px;
+  top: 13px;
+  font-size: 11px;
   font-weight: 650;
   letter-spacing: 0.08em;
   color: rgba(255, 249, 238, 0.88);
@@ -875,138 +916,4 @@ button {
     cursor: none;
   }
 
-  /* ── DJ Deck ── */
-  .dj-shell {
-    width: min(90vw, 980px);
-  }
-
-  .dj-decks {
-    display: flex;
-    gap: 14px;
-    align-items: stretch;
-    margin-bottom: 14px;
-  }
-
-  .dj-deck {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-  }
-
-  .dj-deck-label {
-    font-size: 9px;
-    font-weight: 700;
-    color: rgba(255, 249, 238, 0.55);
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-  }
-
-  .dj-deck-sample {
-    color: rgba(255, 249, 238, 0.8);
-    font-weight: 600;
-  }
-
-  .dj-scrub-pad {
-    flex: 1;
-    min-height: 80px;
-    background: rgba(255, 249, 238, 0.03);
-    border: 1px solid rgba(255, 249, 238, 0.1);
-    border-radius: 8px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: grab;
-    touch-action: none;
-    transition: background 0.15s, border-color 0.15s;
-  }
-
-  .dj-scrub-pad:hover {
-    background: rgba(255, 249, 238, 0.06);
-    border-color: rgba(255, 249, 238, 0.2);
-  }
-
-  .dj-scrub-pad.active {
-    background: rgba(255, 140, 50, 0.12);
-    border-color: rgba(255, 140, 50, 0.35);
-    cursor: grabbing;
-  }
-
-  .dj-scrub-hint {
-    font-size: 8px;
-    font-weight: 600;
-    color: rgba(255, 249, 238, 0.3);
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-    pointer-events: none;
-  }
-
-  .dj-crossfader {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 6px;
-    width: 70px;
-    flex-shrink: 0;
-  }
-
-  .dj-crossfader-label {
-    font-size: 8px;
-    font-weight: 700;
-    color: rgba(255, 249, 238, 0.5);
-    letter-spacing: 0.06em;
-    white-space: nowrap;
-  }
-
-  .dj-crossfader-slider {
-    writing-mode: vertical-lr;
-    direction: rtl;
-    appearance: slider-vertical;
-    width: 16px;
-    height: 80px;
-    accent-color: rgba(255, 140, 50, 0.8);
-  }
-
-  .dj-crossfader-value {
-    font-size: 9px;
-    font-weight: 700;
-    color: rgba(255, 249, 238, 0.6);
-    font-variant-numeric: tabular-nums;
-  }
-
-  .dj-pad-grid {
-    display: grid;
-    grid-template-columns: repeat(8, 1fr);
-    gap: 7px;
-  }
-
-  .dj-pad {
-    background: rgba(255, 249, 238, 0.05);
-    border: 1px solid rgba(255, 249, 238, 0.1);
-    border-radius: 6px;
-    color: rgba(255, 249, 238, 0.65);
-    font-size: 9px;
-    font-weight: 700;
-    letter-spacing: 0.04em;
-    padding: 10px 3px;
-    cursor: pointer;
-    transition: background 0.12s, border-color 0.12s, transform 0.12s;
-    text-transform: uppercase;
-  }
-
-  .dj-pad:hover {
-    background: rgba(255, 249, 238, 0.1);
-    border-color: rgba(255, 249, 238, 0.25);
-    transform: scale(1.04);
-  }
-
-  .dj-pad:active,
-  .dj-pad.deck-a,
-  .dj-pad.deck-b {
-    background: rgba(255, 140, 50, 0.18);
-    border-color: rgba(255, 140, 50, 0.4);
-    color: #fff;
-    transform: scale(0.97);
-  }
 }

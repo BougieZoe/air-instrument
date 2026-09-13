@@ -2,6 +2,7 @@ import { ANALYSER_FFT_SIZE, ANALYSER_SMOOTHING, COMPRESSOR_ATTACK, COMPRESSOR_KN
 import { AudioAnalyser } from "./analyser";
 import { AccompanimentPlayer } from "./AccompanimentPlayer";
 import { createGain } from "./mixer";
+import { MidiOutput } from "./MidiOutput";
 import { PianoEngine } from "./PianoEngine";
 import { SamplePlayer, type SampleDefinition } from "./SamplePlayer";
 import type { IPianoEngine, SamplePack } from "./types";
@@ -16,6 +17,7 @@ export class AudioEngine {
   readonly analyserNode: AnalyserNode;
   readonly analyser: AudioAnalyser;
   readonly samples: SamplePlayer;
+  readonly midi: MidiOutput;
   /** Swappable piano implementation — synth today, sampled/SF2 tomorrow. */
   piano: IPianoEngine;
   readonly accompaniment: AccompanimentPlayer;
@@ -42,6 +44,7 @@ export class AudioEngine {
     this.analyser      = new AudioAnalyser(this.analyserNode);
     this.samples       = new SamplePlayer(this.context, this.sampleBus);
     this.piano         = new PianoEngine(this.context, this.pianoBus);
+    this.midi          = new MidiOutput();
     this.accompaniment = new AccompanimentPlayer(this.context, this.accompanimentBus);
   }
 

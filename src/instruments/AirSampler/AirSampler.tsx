@@ -1,5 +1,6 @@
-import { forwardRef, useImperativeHandle, useRef } from "react";
+import { forwardRef, useCallback, useImperativeHandle, useRef, useState } from "react";
 import { VELOCITY_HAND_MIN, VELOCITY_HAND_RANGE, VELOCITY_MOUSE } from "../../config";
+import { MidiOutput } from "../../audio/MidiOutput";
 import type { InteractionPoint } from "../../hand/types";
 import type { InstrumentHandle, InstrumentProps } from "../types";
 import { SamplePad } from "./SamplePad";
@@ -13,6 +14,24 @@ type AirSamplerProps = InstrumentProps & {
 export const AirSampler = forwardRef<InstrumentHandle, AirSamplerProps>(({ audioRef, onFirstInteraction, pack, onPackChange }, ref) => {
   const padRefs             = useRef(new Map<string, HTMLButtonElement>());
   const lastTargetByPointer = useRef(new Map<string, string | null>());
+  const midiRef             = useRef(new MidiOutput());
+  const [midiEnabled, setMidiEnabled] = useState(false);
+  const [midiDevice, setMidiDevice]   = useState("None");
+
+  const toggleMidi = useCallback(async () => {
+    const midi = midiRef.current;
+    if (midi.isEnabled()) {
+      midi.toggle();
+      setMidiEnabled(false);
+      return;
+    }
+    const ok = await midi.request();
+    if (ok) {
+      midi.toggle();
+      setMidiEnabled(true);
+      setMidiDevice(midi.getOutputName());
+    }
+  }, []);
 
   useImperativeHandle(ref, () => ({
     hitTest(x, y) {
@@ -34,7 +53,9 @@ export const AirSampler = forwardRef<InstrumentHandle, AirSamplerProps>(({ audio
       if (point.state === "PRESS") {
         const sample = pack.pads.find((s) => s.id === targetId);
         if (sample) {
-          audioRef.current?.samples.trigger(sample, VELOCITY_HAND_MIN + point.speed * VELOCITY_HAND_RANGE);
+          const vel = VELOCITY_HAND_MIN + point.speed * VELOCITY_HAND_RANGE;
+          audioRef.current?.samples.trigger(sample, vel);
+          midiRef.current.trigger(sample.id, Math.round(vel * 127));
           node.animate([{ transform: "translate3d(0,0,18px) scale(0.985)", filter: "brightness(1.2)" }, { transform: "translate3d(0,0,0) scale(1)", filter: "brightness(1)" }], { duration: 280, easing: "cubic-bezier(.2,.8,.2,1)" });
           onFirstInteraction();
           return true;
@@ -59,12 +80,11 @@ export const AirSampler = forwardRef<InstrumentHandle, AirSamplerProps>(({ audio
     const node   = padRefs.current.get(sampleId);
     if (!sample || !node) return;
     audioRef.current?.samples.trigger(sample, VELOCITY_MOUSE);
+    midiRef.current.trigger(sampleId, Math.round(VELOCITY_MOUSE * 127));
     node.dataset.state = "press";
     window.setTimeout(() => { node.dataset.state = "idle"; }, 150);
     onFirstInteraction();
   };
-
-  const packIndex = allPacks.findIndex((p) => p.id === pack.id);
 
   return (
     <section className="instrument-shell sampler-shell" aria-label="Air Sampler">
@@ -82,12 +102,17 @@ export const AirSampler = forwardRef<InstrumentHandle, AirSamplerProps>(({ audio
       </div>
       <div className="instrument-footer">
         <div className="pack-switcher">
-          {allPacks.map((p, i) => (
+          {allPacks.map((p) => (
             <button key={p.id} type="button" className={`pack-btn ${p.id === pack.id ? "active" : ""}`}
               onClick={() => onPackChange(p)}>{p.name}</button>
           ))}
         </div>
-        <span>INDEX / PINCH / MOUSE</span>
+        <div className="midi-controls">
+          <button type="button" className={`midi-btn ${midiEnabled ? "active" : ""}`} onClick={toggleMidi}>
+            {midiEnabled ? "MIDI ON" : "MIDI OFF"}
+          </button>
+          {midiEnabled && <span className="midi-device">{midiDevice}</span>}
+        </div>
       </div>
     </section>
   );
