@@ -87,5 +87,65 @@ export const drillPack: GenrePack = {
   pads: [...row(ROW1, "drill"), ...row(ROW2, "drill"), ...row(ROW3, "drill"), ...row(ROW4, "drill")],
 };
 
-export const allPacks: GenrePack[] = [trapProPack, boomBapPack, drillPack];
+// ─── LO-FI ──────────────────────────────────────────────────────────────────
+export const lofiPack: GenrePack = {
+  id: "lofi",
+  name: "LO-FI",
+  subtitle: "TAPE SATURATION / VINYL CRACKLE / WOW & FLUTTER",
+  pads: [...row(ROW1, "lofi"), ...row(ROW2, "lofi"), ...row(ROW3, "lofi"), ...row(ROW4, "lofi")],
+};
+
+// ─── REGGAETON ──────────────────────────────────────────────────────────────
+export const reggaetonPack: GenrePack = {
+  id: "reggaeton",
+  name: "REGGAETON",
+  subtitle: "DEMBOW / LATIN PERCUSSION / TROPICAL PUNCH",
+  pads: [...row(ROW1, "reggaeton"), ...row(ROW2, "reggaeton"), ...row(ROW3, "reggaeton"), ...row(ROW4, "reggaeton")],
+};
+
+// ─── HOUSE ──────────────────────────────────────────────────────────────────
+export const housePack: GenrePack = {
+  id: "house",
+  name: "HOUSE",
+  subtitle: "FOUR ON THE FLOOR / 909 DRUMS / ELECTRONIC STABS",
+  pads: [...row(ROW1, "house"), ...row(ROW2, "house"), ...row(ROW3, "house"), ...row(ROW4, "house")],
+};
+
+// ─── GLITCH ─────────────────────────────────────────────────────────────────
+export const glitchPack: GenrePack = {
+  id: "glitch",
+  name: "GLITCH",
+  subtitle: "BITCRUSH / GRANULAR / FM SYNTHESIS / ARTIFACTS",
+  pads: [...row(ROW1, "glitch"), ...row(ROW2, "glitch"), ...row(ROW3, "glitch"), ...row(ROW4, "glitch")],
+};
+
+// ─── 8-BIT ──────────────────────────────────────────────────────────────────
+export const eightBitPack: GenrePack = {
+  id: "8bit",
+  name: "8-BIT",
+  subtitle: "CHIPTUNE / SQUARE WAVES / ARPEGGIOS / NES",
+  pads: [...row(ROW1, "8bit"), ...row(ROW2, "8bit"), ...row(ROW3, "8bit"), ...row(ROW4, "8bit")],
+};
+
+// ─── BEATBOX ────────────────────────────────────────────────────────────────
+export const beatboxPack: GenrePack = {
+  id: "beatbox",
+  name: "BEATBOX",
+  subtitle: "VOCAL PERCUSSION / FORMANT SYNTHESIS / BREATH",
+  pads: [...row(ROW1, "beatbox"), ...row(ROW2, "beatbox"), ...row(ROW3, "beatbox"), ...row(ROW4, "beatbox")],
+};
+
+// ─── FUNK ───────────────────────────────────────────────────────────────────
+export const funkPack: GenrePack = {
+  id: "funk",
+  name: "FUNK",
+  subtitle: "SLAP BASS / WAH GUITAR / BRASS STABS / CLAVINET",
+  pads: [...row(ROW1, "funk"), ...row(ROW2, "funk"), ...row(ROW3, "funk"), ...row(ROW4, "funk")],
+};
+
+export const allPacks: GenrePack[] = [
+  trapProPack, boomBapPack, drillPack,
+  lofiPack, reggaetonPack, housePack,
+  glitchPack, eightBitPack, beatboxPack, funkPack,
+];
 export const defaultPack = trapProPack;
