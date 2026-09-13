@@ -64,6 +64,137 @@ function render(dur, fn) {
   for (let i = 0; i < len; i++) d[i] = clamp(fn(i / SR, i, len));
   return d;
 }
+
+// ─── ANALOG MODELING DSP ─────────────────────────────────────────────────────
+// Models real hardware characteristics: tube saturation, tape compression,
+// circuit noise, AD/DA quantization, and S/N ratio.
+
+/** Tube/valve saturation — asymmetric warm harmonic distortion */
+function tubeSat(d, drive = 1.5) {
+  for (let i = 0; i < d.length; i++) {
+    const x = d[i] * drive;
+    // Asymmetric soft clip: positive side saturates harder (like real tubes)
+    const pos = Math.tanh(x * 1.1);
+    const neg = Math.tanh(x * 0.9);
+    d[i] = x > 0 ? pos : neg;
+  }
+  return d;
+}
+
+/** Tape compression — soft knee with auto-makeup gain */
+function tapeCompress(d, threshold = 0.6, ratio = 3, attack = 0.003, release = 0.08) {
+  const atkCoeff = 1 - Math.exp(-1 / (attack * SR));
+  const relCoeff = 1 - Math.exp(-1 / (release * SR));
+  let env = 0;
+  for (let i = 0; i < d.length; i++) {
+    const abs = Math.abs(d[i]);
+    const coeff = abs > env ? atkCoeff : relCoeff;
+    env += (abs - env) * coeff;
+    if (env > threshold) {
+      const over = (env - threshold) / threshold;
+      const gainReduction = 1 - over * (1 - 1 / ratio) * 0.5;
+      d[i] *= Math.max(0.4, gainReduction);
+    }
+  }
+  return d;
+}
+
+/** Analog circuit noise — brownian noise (low-frequency dominant, like real circuits) */
+function circuitNoise(d, amount = 0.008) {
+  let brown = 0;
+  for (let i = 0; i < d.length; i++) {
+    brown += (Math.random() * 2 - 1) * 0.02;
+    brown *= 0.998; // Brownian drift
+    d[i] += brown * amount;
+  }
+  return d;
+}
+
+/** AD/DA quantization — simulate 12-bit or 16-bit conversion */
+function quantize(d, bits = 12) {
+  const levels = 2 ** bits;
+  const step = 1 / (levels / 2);
+  for (let i = 0; i < d.length; i++) {
+    d[i] = Math.round(d[i] / step) * step;
+  }
+  return d;
+}
+
+/** Sample rate reduction — simulate low sample rate AD converters */
+function sampleRateReduce(d, targetSR = 22050) {
+  const ratio = Math.round(SR / targetSR);
+  if (ratio <= 1) return d;
+  for (let i = 0; i < d.length; i += ratio) {
+    const val = d[i];
+    for (let j = 1; j < ratio && i + j < d.length; j++) {
+      d[i + j] = val; // zero-order hold
+    }
+  }
+  return d;
+}
+
+/** Tape hiss — high-frequency noise floor */
+function tapeHiss(d, amount = 0.005) {
+  for (let i = 0; i < d.length; i++) {
+    d[i] += (Math.random() * 2 - 1) * amount;
+  }
+  return d;
+}
+
+/** Wow & flutter — pitch modulation from tape transport instability */
+function wowFlutter(d, depth = 0.003, rate = 0.5) {
+  const out = new Float32Array(d.length);
+  for (let i = 0; i < d.length; i++) {
+    const t = i / SR;
+    const mod = Math.sin(2 * Math.PI * rate * t) * depth
+              + Math.sin(2 * Math.PI * rate * 3.17 * t) * depth * 0.3
+              + Math.sin(2 * Math.PI * rate * 7.13 * t) * depth * 0.1;
+    const srcIdx = i * (1 + mod);
+    const idx = Math.floor(srcIdx);
+    const frac = srcIdx - idx;
+    if (idx + 1 < d.length) out[i] = d[idx] * (1 - frac) + d[idx + 1] * frac;
+    else if (idx < d.length) out[i] = d[idx];
+  }
+  return out;
+}
+
+/** S/N ratio — add noise floor proportional to signal level */
+function signalToNoise(d, snrDB = 60) {
+  const noiseFloor = Math.pow(10, -snrDB / 20);
+  for (let i = 0; i < d.length; i++) {
+    d[i] += (Math.random() * 2 - 1) * noiseFloor * 0.3;
+  }
+  return d;
+}
+
+/** Velocity-dependent filtering — soft hits are darker, like real instruments */
+function velocityFilter(d, velocity = 0.8) {
+  const cutoff = 2000 + velocity * 8000; // 2-10 kHz based on velocity
+  lowpass(d, cutoff);
+  return d;
+}
+
+/** Global analog modeling chain — applies all hardware emulation */
+function analogize(d, profile = "warm") {
+  const profiles = {
+    warm:   { tube: 1.8, tape: 0.7, noise: 0.010, bits: 14, srr: 32000, hiss: 0.006, wf: 0.002, snr: 58 },
+    hot:    { tube: 2.5, tape: 0.8, noise: 0.012, bits: 12, srr: 24000, hiss: 0.008, wf: 0.003, snr: 54 },
+    clean:  { tube: 1.2, tape: 0.5, noise: 0.006, bits: 16, srr: 40000, hiss: 0.003, wf: 0.001, snr: 64 },
+    dirty:  { tube: 3.0, tape: 0.9, noise: 0.015, bits: 10, srr: 18000, hiss: 0.010, wf: 0.004, snr: 50 },
+    vintage:{ tube: 2.0, tape: 0.75,noise: 0.012, bits: 12, srr: 22050, hiss: 0.008, wf: 0.005, snr: 52 },
+  };
+  const p = profiles[profile] ?? profiles.warm;
+
+  tubeSat(d, p.tube);
+  tapeCompress(d, 0.6, p.tape * 4);
+  circuitNoise(d, p.noise);
+  quantize(d, p.bits);
+  sampleRateReduce(d, p.srr);
+  tapeHiss(d, p.hiss);
+  const out = wowFlutter(d, p.wf);
+  signalToNoise(out, p.snr);
+  return out;
+}
 function wav(samples) {
   const len = Math.min(samples.length, SR * 4);
   const b = Buffer.alloc(44 + len * 2);
@@ -75,8 +206,23 @@ function wav(samples) {
   for (let i = 0; i < len; i++) b.writeInt16LE(Math.round(clamp(samples[i]) * 32767), 44 + i * 2);
   return b;
 }
+const ANALOG_PROFILES = {
+  "trap-pro":  "hot",
+  "boom-bap":  "vintage",
+  "drill":     "dirty",
+  "lofi":      "vintage",
+  "reggaeton": "clean",
+  "house":     "clean",
+  "glitch":    "dirty",
+  "8bit":      "clean",
+  "beatbox":   "warm",
+  "funk":      "warm",
+};
+let _currentPack = "warm";
+
 function save(dir, name, data) {
-  writeFileSync(join(dir, `${name}.wav`), wav(data));
+  const out = analogize(new Float32Array(data), _currentPack in ANALOG_PROFILES ? ANALOG_PROFILES[_currentPack] : "warm");
+  writeFileSync(join(dir, `${name}.wav`), wav(out));
   process.stdout.write(`  ${name} `);
 }
 
@@ -1840,6 +1986,7 @@ const packs = [
 for (const p of packs) {
   const dir = join(base, p.name);
   mkdirSync(dir, { recursive: true });
+  _currentPack = p.name;
   process.stdout.write(`${p.name}:\n`);
   p.fn(dir);
 }

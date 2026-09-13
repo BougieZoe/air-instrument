@@ -45,13 +45,19 @@ export class SamplePlayer {
     const buffer = this.buffers.get(sample.id);
     if (!buffer) return;
 
+    // Micro-variation: slight pitch randomization (simulates analog instability)
+    const pitchVar = 1 + (Math.random() - 0.5) * 0.006; // ±0.3% pitch
+    // Micro-variation: slight timing offset (simulates analog jitter)
+    const timeVar  = (Math.random() - 0.5) * 0.0008;    // ±0.4ms
+
     const source = this.context.createBufferSource();
     const gain   = this.context.createGain();
     gain.gain.value = (sample.gain ?? 1) * Math.max(0.15, Math.min(1, velocity));
     source.buffer = buffer;
+    source.playbackRate.value = pitchVar;
     source.connect(gain);
     gain.connect(this.output);
-    source.start(now);
+    source.start(now + Math.max(0, timeVar));
 
     if (sample.chokeGroup) {
       const group  = sample.chokeGroup;
