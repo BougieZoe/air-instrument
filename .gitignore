@@ -8,8 +8,9 @@ dist/
 .env
 .env.*
 
-# MediaPipe WASM binaries (large, re-copied from node_modules at install)
-public/mediapipe/wasm/
+# MediaPipe WASM binaries (~18MB total, needed for Vercel deployment)
+# These are committed so Vercel's GitHub integration can deploy them.
+# To regenerate: npm install && node scripts/copyWasm.mjs
 
 # editor / OS
 .DS_Store
