@@ -2,11 +2,11 @@
 
 # 🎵 Air Instrument
 
-**Play music with your hands in the air.**
+**Play music with your hands in the air**
 
-A local-first browser music synthesizer — hold your hand up, your fingers become the controller.
+A local-first browser music synthesizer — hold your hand up, your fingers become the controller
 
-[![Live Demo](https://img.shields.io/badge/LIVE-DEMO-blue?style=for-the-badge&logo=vercel&logoColor=white)](https://air-instrument-repo.vercel.app)
+<img width="1215" height="1295" alt="Air Instrument" src="https://github.com/user-attachments/assets/829ee4c8-f173-476b-acd6-abe30c3489dd" />
 
 </div>
 
