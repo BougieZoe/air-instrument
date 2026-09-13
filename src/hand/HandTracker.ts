@@ -24,6 +24,7 @@ export class HandTracker {
 
   // Calibration state
   private calibrationSamples: number[] = [];
+  private calibrationStartedAt = 0;
   handSizeRatio = 1;  // multiplier: 1.0 = reference hand size
   onCalibrationComplete?: (ratio: number) => void;
 
@@ -68,14 +69,27 @@ export class HandTracker {
   /** Start calibration: collect hand-size samples over CALIBRATION_FRAMES. */
   startCalibration() {
     this.calibrationSamples = [];
+    this.calibrationStartedAt = performance.now();
     this.status = "calibrating";
     console.log("[HandTracker] calibration started — show your hand");
   }
 
+  /** Force-finish calibration with whatever samples we have (or defaults). */
+  skipCalibration() {
+    if (this.status !== "calibrating") return;
+    console.warn("[HandTracker] calibration skipped/timed out — using default hand size");
+    this.finishCalibration();
+  }
+
+  /** 0-1 progress for the calibration UI. */
+  get calibrationProgress(): number {
+    return Math.min(1, this.calibrationSamples.length / CALIBRATION_FRAMES);
+  }
+
   private finishCalibration() {
-    const avg =
-      this.calibrationSamples.reduce((a, b) => a + b, 0) /
-      this.calibrationSamples.length;
+    const avg = this.calibrationSamples.length > 0
+      ? this.calibrationSamples.reduce((a, b) => a + b, 0) / this.calibrationSamples.length
+      : CALIBRATION_REFERENCE_SIZE;
     this.handSizeRatio = avg / CALIBRATION_REFERENCE_SIZE;
     this.recognizer.calibrate(this.handSizeRatio);
     this.status = "ready";
@@ -96,7 +110,11 @@ export class HandTracker {
         for (const hand of rawHands) {
           this.calibrationSamples.push(hand.handSize);
         }
-        if (this.calibrationSamples.length >= CALIBRATION_FRAMES) {
+        // Finish on enough samples, or bail out after the timeout so the UI
+        // never gets stuck (no hand visible, camera covered, dark room, ...).
+        const timedOut =
+          performance.now() - this.calibrationStartedAt >= CALIBRATION_TIMEOUT_MS;
+        if (this.calibrationSamples.length >= CALIBRATION_FRAMES || timedOut) {
           this.finishCalibration();
         }
         return [];

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { GAIN_ACCOMPANIMENT_DEFAULT } from "../config";
+import { CALIBRATION_TIMEOUT_MS, GAIN_ACCOMPANIMENT_DEFAULT } from "../config";
 import { AudioEngine } from "../audio/AudioEngine";
 import { AudioImport } from "../components/AudioImport";
 import { CameraView } from "../components/CameraView";
@@ -58,6 +58,23 @@ export default function AirInstrument() {
     tracker.onCalibrationComplete = () => setCalibrating(false);
   }, [tracker]);
 
+  // Safety net: never let the calibration overlay block the app. The tracker
+  // enforces its own timeout inside detect(), but detect() stops running when
+  // rAF is throttled (background tab / throttled iframe), so time it out here.
+  useEffect(() => {
+    if (!calibrating) return;
+    const t = setTimeout(() => {
+      tracker.skipCalibration();
+      setCalibrating(false);
+    }, CALIBRATION_TIMEOUT_MS + 1500);
+    return () => clearTimeout(t);
+  }, [calibrating, tracker]);
+
+  const skipCalibration = useCallback(() => {
+    tracker.skipCalibration();
+    setCalibrating(false);
+  }, [tracker]);
+
   const ensureAudio = useCallback(async () => {
     if (!audioRef.current) { audioRef.current = new AudioEngine(); await audioRef.current.loadSamplePack(currentPack); }
     else await audioRef.current.resume();
@@ -79,8 +96,15 @@ export default function AirInstrument() {
       setStarted(true);
       setCameraReady(true);
       await engine.resume();
-      tracker.startCalibration();
-      setCalibrating(true);
+      // If MediaPipe failed to load (WASM blocked / unsupported webview),
+      // skip calibration entirely and fall back to mouse control instead of
+      // waiting on a callback that can never fire.
+      if (tracker.status === "error") {
+        setError(tracker.error ?? "Hand tracking unavailable. Mouse fallback is active.");
+      } else {
+        tracker.startCalibration();
+        setCalibrating(true);
+      }
       requestAnimationFrame(() => {
         const video = videoRef.current;
         if (video) { video.srcObject = stream; video.play().catch(console.warn); console.log("[Camera] stream attached"); }
@@ -93,7 +117,7 @@ export default function AirInstrument() {
     } finally {
       setStarting(false);
     }
-  }, [ensureAudio]);
+  }, [ensureAudio, tracker]);
 
   const handleModeChange = (nextMode: InstrumentMode) => { instrumentRef.current?.reset(); setMode(nextMode); };
 
@@ -189,7 +213,9 @@ export default function AirInstrument() {
           <div className="calibration-box">
             <div className="calibration-icon">✋</div>
             <div className="calibration-title">校准手型</div>
-            <div className="calibration-hint">张开手掌，保持不动...</div>
+            <div className="calibration-hint">张开手掌，保持不动…（检测不到手会自动跳过）</div>
+            <div className="calibration-progress"><div className="calibration-progress-fill" /></div>
+            <button type="button" className="calibration-skip" onClick={skipCalibration}>跳过</button>
           </div>
         </div>
       )}

@@ -971,6 +971,45 @@ button {
   color: rgba(255, 255, 255, 0.6);
 }
 
+/* Indeterminate progress + skip control (calibration never blocks forever) */
+.calibration-progress {
+  width: 220px;
+  height: 4px;
+  margin: 22px auto 0;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.15);
+  overflow: hidden;
+}
+
+.calibration-progress-fill {
+  height: 100%;
+  width: 40%;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.9);
+  animation: calSweep 1.2s ease-in-out infinite;
+}
+
+.calibration-skip {
+  margin-top: 18px;
+  padding: 8px 24px;
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.85);
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 999px;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.calibration-skip:hover {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+@keyframes calSweep {
+  from { transform: translateX(-100%); }
+  to   { transform: translateX(350%); }
+}
+
 @keyframes calPulse {
   0%, 100% { transform: scale(1); }
   50% { transform: scale(1.15); }
