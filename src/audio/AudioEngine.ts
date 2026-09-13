@@ -62,23 +62,45 @@ export class AudioEngine {
     this.accompaniment = new AccompanimentPlayer(this.context, this.accompanimentBus);
   }
 
-  /** Stereo exponential-decay noise impulse — a believable small hall. */
+  /**
+   * Stereo impulse response for a believable small hall.
+   *
+   * Key detail: real rooms absorb highs faster than lows, so each IR channel
+   * is white noise run through a time-varying one-pole lowpass whose cutoff
+   * falls over the tail (bright attack → dark wash). Early reflections are
+   * SHORT noise bursts (not single-sample clicks — those read as metallic
+   * pings) spread across the first 90ms with a stereo offset.
+   */
   private createImpulseResponse(seconds: number, decay: number): AudioBuffer {
     const rate   = this.context.sampleRate;
     const length = Math.floor(rate * seconds);
     const impulse = this.context.createBuffer(2, length, rate);
     for (let ch = 0; ch < 2; ch++) {
       const data = impulse.getChannelData(ch);
+      let lp = 0; // time-varying one-pole lowpass state
+      let lp2 = 0; // second smoother stage for a gentler slope
       for (let i = 0; i < length; i++) {
-        // Exponential decay + slight early-reflection density taper
         const t = i / length;
-        data[i] = (Math.random() * 2 - 1) * Math.pow(1 - t, decay);
+        const amp = Math.pow(1 - t, decay);
+        // Cutoff falls 12kHz -> 900Hz across the tail (progressive darkening)
+        const k = Math.exp(-2 * Math.PI * (900 + 11000 * Math.pow(1 - t, 1.6)) / rate);
+        const x = Math.random() * 2 - 1;
+        lp += k * (x - lp);
+        lp2 += k * (lp - lp2);
+        data[i] = lp2 * amp;
       }
-      // A few discrete early reflections for spatial definition
-      for (const [ms, amp] of [[23, 0.4], [41, 0.3], [67, 0.22], [89, 0.16]]) {
-        const idx = Math.floor((ms / 1000) * rate) + ch * 7;
-        if (idx < length) data[idx] += amp;
+      // Early reflections: short noise bursts with stereo offset (ch 2 arrives
+      // a touch later — walls are not symmetric)
+      for (const [ms, ampMs] of [[19, 0.5], [37, 0.38], [58, 0.28], [76, 0.2], [91, 0.14]]) {
+        const idx = Math.floor(((ms + ch * 4) / 1000) * rate);
+        const burstLen = Math.floor(rate * 0.006);
+        for (let i = 0; i < burstLen && idx + i < length; i++) {
+          data[idx + i] += (Math.random() * 2 - 1) * (1 - i / burstLen) * ampMs;
+        }
       }
+      // Direct-to-reverb pre-delay gap: keeps the dry signal readable
+      const gap = Math.floor(rate * 0.012);
+      for (let i = 0; i < gap; i++) data[i] *= i / gap;
     }
     return impulse;
   }

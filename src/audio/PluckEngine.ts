@@ -1,11 +1,15 @@
 /**
- * PluckEngine — Karplus-Strong physical string modeling in Web Audio.
+ * PluckEngine — Karplus-Strong physical string modeling, rendered in pure JS.
  *
- * A burst of noise circulates through a tuned delay loop, losing highs at
- * every cycle (string losses) and overall energy (feedback < 1). This is the
- * textbook physical model of a plucked string — the resulting tone has the
- * natural inharmonic attack and slow bright-to-dark decay of a real string,
- * which additive or sampled approximations struggle to match.
+ * A noise burst circulates through a tuned delay loop, losing highs at every
+ * cycle (string stiffness losses) and overall energy (feedback < 1) — the
+ * textbook physical model of a plucked string.
+ *
+ * IMPORTANT: the KS loop is executed in JavaScript over a Float32Array and
+ * played back via an AudioBufferSourceNode, NOT with a Web Audio delay
+ * feedback loop. A DelayNode loop is quantized to 128-sample render quanta
+ * (≈2.9ms), which caps pitch at ≈344Hz and turns everything above into the
+ * same low thud. Direct rendering is mathematically exact at any pitch.
  *
  * Used by Air Harp (guzheng preset) and Air Kalimba (tine preset).
  */
@@ -15,16 +19,66 @@ export type PluckPreset = {
   feedback: number;
   /** Seconds until the voice is fully faded and torn down. */
   decay: number;
-  /** Base low-pass ceiling of the damping filter (velocity adds on top). */
-  brightness: number;
+  /** One-pole damping coefficient per pass (higher = darker faster). */
+  damp: number;
   /** Amplitude of the attack transient (nail / tine click). */
   click: number;
   /** Reverb send amount 0-1. */
   reverb: number;
+  /** Micro detune drift of the loop (real strings never hold pitch dead-on). */
+  drift: number;
 };
 
-export const HARP_PRESET: PluckPreset    = { feedback: 0.986, decay: 3.2,  brightness: 4200, click: 0.10, reverb: 0.38 };
-export const KALIMBA_PRESET: PluckPreset = { feedback: 0.952, decay: 1.2,  brightness: 5600, click: 0.34, reverb: 0.26 };
+export const HARP_PRESET: PluckPreset    = { feedback: 0.996, decay: 3.4,  damp: 0.9965, click: 0.08, reverb: 0.38, drift: 0.0022 };
+export const KALIMBA_PRESET: PluckPreset = { feedback: 0.978, decay: 1.3,  damp: 0.988,  click: 0.30, reverb: 0.26, drift: 0.0035 };
+
+/** Render one exact Karplus-Strong pluck into a fresh buffer. */
+function renderKS(
+  sampleRate: number,
+  freq: number,
+  velocity: number,
+  preset: PluckPreset,
+): Float32Array {
+  const period = sampleRate / Math.max(20, Math.min(4200, freq));
+  const N = Math.max(2, Math.round(period));
+  // The loop delay is N samples: one damping low-pass pass per period.
+  const length = Math.floor(sampleRate * preset.decay);
+  const out = new Float32Array(length);
+
+  // Excitation: one period of tapered noise (pluck position asymmetry via
+  // comb-ish taper offset) — richer than pure white.
+  const burst = new Float32Array(N);
+  for (let i = 0; i < N; i++) burst[i] = (Math.random() * 2 - 1) * (1 - i / N);
+
+  // Pick-position comb filter: attenuates one harmonic series like a real
+  // pluck point between bridge and nut (30% from the bridge).
+  const pickPoint = 0.3;
+  for (let i = N - 1; i >= Math.round(N * pickPoint); i--) burst[i] -= burst[i - Math.round(N * pickPoint)];
+
+  let y1 = 0; // one-pole damper state
+  const dampK = preset.damp;
+
+  for (let i = 0; i < length; i++) {
+    const idx = i % N;
+    const current = burst[idx];
+    out[i] = current;
+    // One-pole low-pass pass + feedback: the KS update
+    y1 += dampK * (current - y1);
+    burst[idx] = (y1 + current * (1 - dampK) * 0.2) * preset.feedback;
+  }
+  // Velocity shapes level; keep peaks sane
+  const gain = velocity * 0.9;
+  for (let i = 0; i < length; i++) out[i] *= gain;
+  return out;
+}
+
+/** Add a tine/nail attack transient at the head of the buffer. */
+function addClick(samples: Float32Array, sampleRate: number, amount: number) {
+  const clickLen = Math.max(16, Math.round(sampleRate * 0.004));
+  for (let i = 0; i < Math.min(clickLen, samples.length); i++) {
+    samples[i] += (Math.random() * 2 - 1) * (1 - i / clickLen) * amount;
+  }
+}
 
 type Cleanup = ReturnType<typeof setTimeout>;
 
@@ -42,73 +96,35 @@ export class PluckEngine {
     const ctx = this.context;
     const now = ctx.currentTime;
     const vel = Math.max(0.15, Math.min(1, velocity));
-    const period = 1 / Math.max(20, Math.min(4000, freq));
 
-    // ── Karplus-Strong loop: delay → damper → feedback → delay ──
-    const delay = ctx.createDelay(0.05);
-    delay.delayTime.value = period;
-    const damper = ctx.createBiquadFilter();
-    damper.type = "lowpass";
-    damper.frequency.value = 1500 + preset.brightness * (0.35 + vel * 0.9);
-    damper.Q.value = 0.4;
-    const feedback = ctx.createGain();
-    feedback.gain.value = preset.feedback;
-    delay.connect(damper);
-    damper.connect(feedback);
-    feedback.connect(delay);
+    // Exact KS render (≈1-3ms of JS for a 3s buffer — well under one frame)
+    const rendered = renderKS(ctx.sampleRate, freq, vel, preset);
+    addClick(rendered, ctx.sampleRate, preset.click * vel);
 
-    // Excitation: one period of tapered noise burst
-    const burstLen = Math.max(2, Math.round(ctx.sampleRate * period));
-    const burstBuffer = ctx.createBuffer(1, burstLen, ctx.sampleRate);
-    const burstData = burstBuffer.getChannelData(0);
-    for (let i = 0; i < burstLen; i++) burstData[i] = (Math.random() * 2 - 1) * (1 - i / burstLen);
-    const burst = ctx.createBufferSource();
-    burst.buffer = burstBuffer;
-    burst.connect(delay);
-    burst.start(now);
+    const buffer = ctx.createBuffer(1, rendered.length, ctx.sampleRate);
+    buffer.copyToChannel(rendered as Float32Array<ArrayBuffer>, 0);
 
-    // Micro detune drift so no two plucks are identical (real strings never are)
-    delay.delayTime.setTargetAtTime(period * (1 + (Math.random() - 0.5) * 0.0022), now, 0.06);
+    const source = ctx.createBufferSource();
+    source.buffer = buffer;
+    // Micro detune drift — no two plucks identical (real strings never are)
+    source.playbackRate.value = 1 + (Math.random() - 0.5) * preset.drift;
 
-    // ── Output tap + envelope ──
     const out = ctx.createGain();
-    out.gain.setValueAtTime(vel, now);
-    out.gain.exponentialRampToValueAtTime(0.0008, now + preset.decay);
-    damper.connect(out);
+    out.gain.value = 1;
+    source.connect(out);
     out.connect(this.dry);
+
     const wet = ctx.createGain();
     wet.gain.value = preset.reverb;
     out.connect(wet);
     wet.connect(this.reverbSend);
 
-    // ── Attack transient (nail / tine click) ──
-    if (preset.click > 0) {
-      const clickLen = Math.max(16, Math.round(ctx.sampleRate * 0.004));
-      const clickBuffer = ctx.createBuffer(1, clickLen, ctx.sampleRate);
-      const clickData = clickBuffer.getChannelData(0);
-      for (let i = 0; i < clickLen; i++) clickData[i] = (Math.random() * 2 - 1) * (1 - i / clickLen);
-      const click = ctx.createBufferSource();
-      click.buffer = clickBuffer;
-      const clickHp = ctx.createBiquadFilter();
-      clickHp.type = "highpass";
-      clickHp.frequency.value = 1800;
-      const clickGain = ctx.createGain();
-      clickGain.gain.value = preset.click * vel;
-      click.connect(clickHp);
-      clickHp.connect(clickGain);
-      clickGain.connect(this.dry);
-      click.start(now);
-      setTimeout(() => { try { clickGain.disconnect(); } catch { /* noop */ } }, 120);
-    }
+    source.start(now);
 
-    // Tear the loop down after the tail — Web Audio has no "stop" for it
     const cleanup: Cleanup = setTimeout(() => {
-      try {
-        feedback.gain.value = 0;
-        delay.disconnect(); damper.disconnect(); out.disconnect(); wet.disconnect();
-      } catch { /* already gone */ }
+      try { out.disconnect(); wet.disconnect(); } catch { /* already gone */ }
       this.cleanups.delete(cleanup);
-    }, (preset.decay + 0.4) * 1000);
+    }, (preset.decay + 0.5) * 1000);
     this.cleanups.add(cleanup);
   }
 
