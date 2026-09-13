@@ -21,8 +21,10 @@ export class SamplePlayer {
     }));
   }
 
-  /** Load a named pack. Switching packs keeps already-cached buffers. */
+  /** Load a named pack. Clears old buffers first so new samples take effect. */
   async loadPack(pack: SamplePack) {
+    this.buffers.clear();
+    this.lastTrigger.clear();
     await this.load(pack.pads);
     this.currentPackId = pack.id;
   }
