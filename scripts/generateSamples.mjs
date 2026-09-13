@@ -1,8 +1,12 @@
 /**
  * scripts/generateSamples.mjs
  *
- * High-quality procedural drum synthesis. Generates 48 WAV files across 3 genre
- * packs: trap-pro, boom-bap, drill. All sounds are original — no samples needed.
+ * High-quality procedural drum synthesis with strong genre differentiation.
+ * Each pack gets a unique "style bus" that shapes the final sound.
+ *
+ * TRAP PRO  → bright transients, crispy highs, aggressive punch
+ * BOOM BAP  → warm/muddy lows, rolled-off highs, vinyl saturation
+ * DRILL     → dark/menacing, deep 808s, sharp metallic hats
  *
  * Usage:  node scripts/generateSamples.mjs
  * Output: public/samples/{trap-pro,boom-bap,drill}/
@@ -21,7 +25,6 @@ const env = (t, dur, atk = 0.005, dec = 0.18) => {
 };
 const noise = () => Math.random() * 2 - 1;
 
-/** Simple 3-tap algorithmic reverb (pre-delay + short + long tail) */
 function reverb(data, { preMs = 18, shortMs = 45, shortGain = 0.28, longMs = 120, longGain = 0.14 } = {}) {
   const out = new Float32Array(data.length + longMs * SR / 1000 | 0);
   out.set(data);
@@ -38,36 +41,25 @@ function reverb(data, { preMs = 18, shortMs = 45, shortGain = 0.28, longMs = 120
   return out;
 }
 
-/** Soft-clip saturation */
 function saturate(data, drive = 3) {
-  for (let i = 0; i < data.length; i++) {
-    const x = data[i] * drive;
-    data[i] = Math.tanh(x) / Math.tanh(drive);
-  }
+  for (let i = 0; i < data.length; i++) data[i] = Math.tanh(data[i] * drive) / Math.tanh(drive);
   return data;
 }
 
-/** Simple 2-pole lowpass filter */
 function lowpass(data, freq, Q = 0.7) {
   const w0 = 2 * Math.PI * freq / SR;
   const alpha = Math.sin(w0) / (2 * Q);
-  const b0 = (1 - Math.cos(w0)) / 2;
-  const b1 = 1 - Math.cos(w0);
-  const b2 = (1 - Math.cos(w0)) / 2;
-  const a0 = 1 + alpha;
-  const a1 = -2 * Math.cos(w0);
-  const a2 = 1 - alpha;
+  const b0 = (1 - Math.cos(w0)) / 2, b1 = 1 - Math.cos(w0), b2 = b0;
+  const a0 = 1 + alpha, a1 = -2 * Math.cos(w0), a2 = 1 - alpha;
   let x1 = 0, x2 = 0, y1 = 0, y2 = 0;
   for (let i = 0; i < data.length; i++) {
-    const x0 = data[i];
-    const y0 = (b0 * x0 + b1 * x1 + b2 * x2 - a1 * y1 - a2 * y2) / a0;
-    x2 = x1; x1 = x0; y2 = y1; y1 = y0;
+    const y0 = (b0 * data[i] + b1 * x1 + b2 * x2 - a1 * y1 - a2 * y2) / a0;
+    x2 = x1; x1 = data[i]; y2 = y1; y1 = y0;
     data[i] = y0;
   }
   return data;
 }
 
-/** Simple highpass via subtraction of lowpass */
 function highpass(data, freq, Q = 0.7) {
   const lp = new Float32Array(data);
   lowpass(lp, freq, Q);
@@ -75,14 +67,12 @@ function highpass(data, freq, Q = 0.7) {
   return data;
 }
 
-/** Bandpass = lowpass then highpass */
-function bandpass(data, lowFreq, highFreq, Q = 0.7) {
-  lowpass(data, highFreq, Q);
-  highpass(data, lowFreq, Q);
+function bandpass(data, low, high, Q = 0.7) {
+  lowpass(data, high, Q);
+  highpass(data, low, Q);
   return data;
 }
 
-/** Compressor: threshold in dB, ratio:1, knee in dB */
 function compress(data, { threshold = -12, ratio = 4, knee = 6, attack = 0.003, release = 0.1 } = {}) {
   const threshLin = Math.pow(10, threshold / 20);
   const kneeLin = Math.pow(10, knee / 20);
@@ -91,13 +81,29 @@ function compress(data, { threshold = -12, ratio = 4, knee = 6, attack = 0.003, 
   let envelope = 0;
   for (let i = 0; i < data.length; i++) {
     const abs = Math.abs(data[i]);
-    const coeff = abs > envelope ? attCoeff : relCoeff;
-    envelope += (abs - envelope) * coeff;
+    envelope += (abs - envelope) * (abs > envelope ? attCoeff : relCoeff);
     const overThreshold = (envelope - threshLin) / threshLin;
-    const gain = overThreshold > 0
-      ? 1 + (1 / ratio - 1) * Math.min(1, overThreshold / (kneeLin - 1))
-      : 1;
-    data[i] *= gain;
+    data[i] *= overThreshold > 0 ? 1 + (1 / ratio - 1) * Math.min(1, overThreshold / (kneeLin - 1)) : 1;
+  }
+  return data;
+}
+
+/** Parametric EQ boost/cut at a frequency */
+function eq(data, freq, gainDB, Q = 1.0) {
+  const A = Math.pow(10, gainDB / 40);
+  const w0 = 2 * Math.PI * freq / SR;
+  const alpha = Math.sin(w0) / (2 * Q);
+  const b0 = 1 + alpha * A;
+  const b1 = -2 * Math.cos(w0);
+  const b2 = 1 - alpha * A;
+  const a0 = 1 + alpha / A;
+  const a1 = -2 * Math.cos(w0);
+  const a2 = 1 - alpha / A;
+  let x1 = 0, x2 = 0, y1 = 0, y2 = 0;
+  for (let i = 0; i < data.length; i++) {
+    const y0 = (b0 * data[i] + b1 * x1 + b2 * x2 - a1 * y1 - a2 * y2) / a0;
+    x2 = x1; x1 = data[i]; y2 = y1; y1 = y0;
+    data[i] = y0;
   }
   return data;
 }
@@ -105,31 +111,19 @@ function compress(data, { threshold = -12, ratio = 4, knee = 6, attack = 0.003, 
 function render(name, duration, fn) {
   const len = Math.floor(duration * SR);
   const data = new Float32Array(len);
-  for (let i = 0; i < len; i++) {
-    data[i] = clamp(fn(i / SR, i, len));
-  }
+  for (let i = 0; i < len; i++) data[i] = clamp(fn(i / SR, i, len));
   return data;
 }
 
 function encodeWav(samples) {
-  const len = Math.min(samples.length, 44100 * 4); // cap at 4s
+  const len = Math.min(samples.length, SR * 4);
   const buf = Buffer.alloc(44 + len * 2);
-  buf.write("RIFF", 0);
-  buf.writeUInt32LE(36 + len * 2, 4);
-  buf.write("WAVE", 8);
-  buf.write("fmt ", 12);
-  buf.writeUInt32LE(16, 16);
-  buf.writeUInt16LE(1, 20);
-  buf.writeUInt16LE(1, 22);
-  buf.writeUInt32LE(SR, 24);
-  buf.writeUInt32LE(SR * 2, 28);
-  buf.writeUInt16LE(2, 32);
-  buf.writeUInt16LE(16, 34);
-  buf.write("data", 36);
-  buf.writeUInt32LE(len * 2, 40);
-  for (let i = 0; i < len; i++) {
-    buf.writeInt16LE(Math.round(clamp(samples[i]) * 32767), 44 + i * 2);
-  }
+  buf.write("RIFF", 0); buf.writeUInt32LE(36 + len * 2, 4); buf.write("WAVE", 8);
+  buf.write("fmt ", 12); buf.writeUInt32LE(16, 16); buf.writeUInt16LE(1, 20);
+  buf.writeUInt16LE(1, 22); buf.writeUInt32LE(SR, 24); buf.writeUInt32LE(SR * 2, 28);
+  buf.writeUInt16LE(2, 32); buf.writeUInt16LE(16, 34);
+  buf.write("data", 36); buf.writeUInt32LE(len * 2, 40);
+  for (let i = 0; i < len; i++) buf.writeInt16LE(Math.round(clamp(samples[i]) * 32767), 44 + i * 2);
   return buf;
 }
 
@@ -138,437 +132,273 @@ function save(dir, name, data) {
   process.stdout.write(`  ${name} (${(data.length / SR * 1000 | 0)}ms)\n`);
 }
 
+/** Apply a genre-specific "style bus" to every sample in a pack */
+function applyStyleBus(data, style) {
+  if (style === "trap") {
+    // TRAP: bright, aggressive, punchy
+    eq(data, 3500, 4);        // boost highs for crispy hats
+    eq(data, 80, 3);          // boost sub for 808 weight
+    lowpass(data, 14000);     // slight top roll
+    compress(data, { threshold: -10, ratio: 3, attack: 0.001, release: 0.05 });
+    saturate(data, 1.8);
+  } else if (style === "boom-bap") {
+    // BOOM BAP: warm, dusty, lo-fi, vinyl character
+    lowpass(data, 4500);      // heavy high cut = muffled/lo-fi
+    highpass(data, 40);       // remove sub rumble
+    eq(data, 220, 4);         // boost warm mids
+    eq(data, 800, 2);         // body
+    saturate(data, 3.5);      // heavy saturation = grit
+    compress(data, { threshold: -6, ratio: 6, attack: 0.001, release: 0.04 }); // squash it
+    // vinyl noise texture
+    for (let i = 0; i < data.length; i++) {
+      data[i] += (Math.random() < 0.01 ? (Math.random() - 0.5) * 0.06 : 0);
+    }
+  } else if (style === "drill") {
+    // DRILL: dark, menacing, deep sub, metallic
+    lowpass(data, 8000);      // cut highs for darkness
+    highpass(data, 30);       // keep deep sub
+    eq(data, 60, 5);          // massive sub boost
+    eq(data, 4000, -3);       // cut presence = dark
+    eq(data, 200, -2);        // cut warmth = cold
+    saturate(data, 2.2);
+    compress(data, { threshold: -8, ratio: 4, attack: 0.001, release: 0.06 });
+  }
+  return data;
+}
+
 // ═══════════════════════════════════════════════════════════════════════════════
-// PACK 1: TRAP PRO — aggressive 808s, crispy hats, punchy snares
+// TRAP PRO — bright transients, crispy hats, aggressive 808
 // ═══════════════════════════════════════════════════════════════════════════════
 function generateTrapPro(dir) {
   process.stdout.write("trap-pro:\n");
 
-  // Kick: deep sub + click transient
-  let d = render("kick", 0.55, (t) => {
-    const f = 50 + 120 * Math.exp(-t * 18);
-    const sub = Math.sin(2 * Math.PI * f * t) * env(t, 0.55, 0.001, 0.2);
-    const click = (t < 0.008 ? noise() * (1 - t / 0.008) : 0) * 0.4;
-    return (sub + click) * 1.1;
+  let d;
+  d = render("kick", 0.5, (t) => {
+    const f = 55 + 150 * Math.exp(-t * 22);
+    return (Math.sin(2 * Math.PI * f * t) * env(t, 0.5, 0.001, 0.15) +
+            (t < 0.006 ? noise() * (1 - t / 0.006) * 0.5 : 0)) * 1.1;
   });
-  saturate(d, 2.5);
-  compress(d, { threshold: -10, ratio: 3, attack: 0.001, release: 0.08 });
-  save(dir, "kick", d);
+  save(dir, "kick", applyStyleBus(d, "trap"));
 
-  // Snare: body + snap + noise, with reverb
-  d = render("snare", 0.38, (t) => {
-    const body = Math.sin(2 * Math.PI * 195 * t) * env(t, 0.38, 0.001, 0.1);
-    const snap = Math.sin(2 * Math.PI * 3200 * t) * Math.exp(-t * 60) * 0.3;
-    const n = noise() * env(t, 0.38, 0.001, 0.06) * 0.55;
-    return body * 0.4 + snap + n;
+  d = render("snare", 0.35, (t) => {
+    return (Math.sin(2 * Math.PI * 200 * t) * env(t, 0.35, 0.001, 0.08) * 0.4 +
+            Math.sin(2 * Math.PI * 3500 * t) * Math.exp(-t * 70) * 0.35 +
+            noise() * env(t, 0.35, 0.001, 0.05) * 0.6);
   });
-  bandpass(d, 200, 7000);
-  saturate(d, 2);
-  d = reverb(d, { preMs: 12, shortMs: 40, shortGain: 0.2, longMs: 95, longGain: 0.1 });
-  compress(d, { threshold: -14, ratio: 3 });
-  save(dir, "snare", d);
+  save(dir, "snare", applyStyleBus(d, "trap"));
 
-  // Clap: multi-transient + reverb
-  d = render("clap", 0.32, (t) => {
-    const hits = [0, 0.012, 0.024, 0.038];
-    let v = 0;
-    for (const h of hits) {
-      if (t > h) v += noise() * Math.exp(-((t - h) * 42)) * 0.45;
-    }
+  d = render("clap", 0.3, (t) => {
+    let v = 0; for (const h of [0, 0.011, 0.022, 0.035]) if (t > h) v += noise() * Math.exp(-((t - h) * 45)) * 0.45;
     return v;
   });
-  bandpass(d, 800, 6000);
-  saturate(d, 2.2);
-  d = reverb(d, { preMs: 8, shortMs: 35, shortGain: 0.3, longMs: 85, longGain: 0.18 });
-  save(dir, "clap", d);
+  save(dir, "clap", applyStyleBus(d, "trap"));
 
-  // Closed hat: tight metallic
-  d = render("closed-hat", 0.08, (t) => {
-    return (noise() * 0.75 + Math.sin(2 * Math.PI * 8200 * t) * 0.18 + Math.sin(2 * Math.PI * 12400 * t) * 0.1) * env(t, 0.08, 0.001, 0.018);
+  d = render("closed-hat", 0.07, (t) => (noise() * 0.7 + Math.sin(2 * Math.PI * 9000 * t) * 0.15) * env(t, 0.07, 0.0005, 0.015));
+  save(dir, "closed-hat", applyStyleBus(d, "trap"));
+
+  d = render("open-hat", 0.5, (t) => (noise() * 0.5 + Math.sin(2 * Math.PI * 7500 * t) * 0.18) * env(t, 0.5, 0.002, 0.2));
+  save(dir, "open-hat", applyStyleBus(d, "trap"));
+
+  d = render("808", 1.8, (t) => Math.tanh(Math.sin(2 * Math.PI * (50 - t * 10) * t) * 2.8) * env(t, 1.8, 0.005, 0.7) * 0.9);
+  save(dir, "808", applyStyleBus(d, "trap"));
+
+  d = render("sub-bass", 1.0, (t) => Math.sin(2 * Math.PI * 48 * t) * env(t, 1.0, 0.02, 0.45) * 0.85);
+  save(dir, "sub-bass", applyStyleBus(d, "trap"));
+
+  d = render("perc", 0.2, (t) => (Math.sin(2 * Math.PI * 600 * t) + Math.sin(2 * Math.PI * 1200 * t) * 0.35 + noise() * 0.2) * env(t, 0.2, 0.001, 0.05));
+  save(dir, "perc", applyStyleBus(d, "trap"));
+
+  d = render("rim", 0.14, (t) => (Math.sin(2 * Math.PI * 950 * t) + Math.sin(2 * Math.PI * 1900 * t) * 0.45) * env(t, 0.14, 0.0005, 0.03));
+  save(dir, "rim", applyStyleBus(d, "trap"));
+
+  d = render("impact", 1.3, (t) => {
+    const f = 80 - t * 35;
+    return (Math.sin(2 * Math.PI * f * t) * 0.65 + noise() * 0.12) * env(t, 1.3, 0.002, 0.5);
   });
-  highpass(d, 5500);
-  saturate(d, 1.8);
-  save(dir, "closed-hat", d);
+  save(dir, "impact", applyStyleBus(d, "trap"));
 
-  // Open hat: longer, brighter
-  d = render("open-hat", 0.55, (t) => {
-    return (noise() * 0.55 + Math.sin(2 * Math.PI * 7200 * t) * 0.2 + Math.sin(2 * Math.PI / 2 * (500 + t * 4000) * t) * 0.12) * env(t, 0.55, 0.002, 0.22);
+  d = render("riser", 1.6, (t) => {
+    const lift = t / 1.6;
+    return (Math.sin(2 * Math.PI * (250 + lift * lift * 2200) * t) * 0.25 + noise() * 0.15) * lift * lift * env(t, 1.6, 0.05, 1.2);
   });
-  highpass(d, 4800);
-  saturate(d, 1.6);
-  save(dir, "open-hat", d);
+  save(dir, "riser", applyStyleBus(d, "trap"));
 
-  // 808: deep sub with saturation harmonics
-  d = render("808", 1.6, (t) => {
-    const f = 48 - t * 12;
-    return Math.sin(2 * Math.PI * f * t) * env(t, 1.6, 0.008, 0.7) * 0.9;
-  });
-  saturate(d, 3.2);
-  compress(d, { threshold: -16, ratio: 4, release: 0.3 });
-  save(dir, "808", d);
+  d = render("fx", 0.6, (t) => (Math.sin(2 * Math.PI * (400 + Math.sin(t * 20) * 200) * t) + noise() * 0.2) * env(t, 0.6, 0.01, 0.22) * 0.5);
+  save(dir, "fx", applyStyleBus(d, "trap"));
 
-  // Sub bass: clean, deep
-  d = render("sub-bass", 1.2, (t) => Math.sin(2 * Math.PI * 52 * t) * env(t, 1.2, 0.02, 0.5) * 0.85);
-  lowpass(d, 150);
-  save(dir, "sub-bass", d);
+  d = render("vocal", 0.8, (t) => (Math.sin(2 * Math.PI * 230 * t) * 0.35 + Math.sin(2 * Math.PI * 350 * t) * 0.22 + Math.sin(2 * Math.PI * 500 * t) * 0.12) * (1 + Math.sin(t * 6) * 0.008) * env(t, 0.8, 0.03, 0.32));
+  save(dir, "vocal", applyStyleBus(d, "trap"));
 
-  // Perc: metallic tonal hit
-  d = render("perc", 0.22, (t) => {
-    return (Math.sin(2 * Math.PI * 580 * t) + Math.sin(2 * Math.PI * 1100 * t) * 0.4 + noise() * 0.2) * env(t, 0.22, 0.001, 0.055);
-  });
-  saturate(d, 1.8);
-  save(dir, "perc", d);
+  d = render("chop", 0.25, (t) => (Math.sin(2 * Math.PI * 440 * t) + Math.sin(2 * Math.PI * 554 * t) * 0.5 + Math.sin(2 * Math.PI * 659 * t) * 0.3) * env(t, 0.25, 0.003, 0.07) * 0.55);
+  save(dir, "chop", applyStyleBus(d, "trap"));
 
-  // Rim: sharp, woody
-  d = render("rim", 0.16, (t) => {
-    return (Math.sin(2 * Math.PI * 920 * t) + Math.sin(2 * Math.PI * 1880 * t) * 0.5 + noise() * 0.15) * env(t, 0.16, 0.0005, 0.035);
-  });
-  save(dir, "rim", d);
-
-  // Impact: cinematic low hit
-  d = render("impact", 1.4, (t) => {
-    const f = 85 - t * 40;
-    return (Math.sin(2 * Math.PI * f * t) * 0.7 + noise() * 0.12) * env(t, 1.4, 0.002, 0.5);
-  });
-  saturate(d, 2);
-  compress(d, { threshold: -12, ratio: 3 });
-  save(dir, "impact", d);
-
-  // Riser: upward sweep
-  d = render("riser", 1.8, (t) => {
-    const lift = t / 1.8;
-    const f = 220 + lift * lift * 2000;
-    return (Math.sin(2 * Math.PI * f * t) * 0.28 + noise() * 0.15) * lift * lift * env(t, 1.8, 0.05, 1.2);
-  });
-  save(dir, "riser", d);
-
-  // FX: modulated hit
-  d = render("fx", 0.7, (t) => {
-    return (Math.sin(2 * Math.PI * (380 + Math.sin(t * 22) * 180) * t) + noise() * 0.2) * env(t, 0.7, 0.01, 0.25) * 0.55;
-  });
-  saturate(d, 1.5);
-  save(dir, "fx", d);
-
-  // Vocal texture: warm formant
-  d = render("vocal", 0.85, (t) => {
-    const formant1 = Math.sin(2 * Math.PI * 220 * t) * 0.32;
-    const formant2 = Math.sin(2 * Math.PI * 340 * t) * 0.22;
-    const formant3 = Math.sin(2 * Math.PI * 480 * t) * 0.14;
-    const vibrato = 1 + Math.sin(2 * Math.PI * 5.5 * t) * 0.008;
-    return (formant1 + formant2 + formant3) * vibrato * env(t, 0.85, 0.03, 0.35);
-  });
-  save(dir, "vocal", d);
-
-  // Chop: melodic stab
-  d = render("chop", 0.28, (t) => {
-    return (Math.sin(2 * Math.PI * 440 * t) + Math.sin(2 * Math.PI * 554.37 * t) * 0.5 + Math.sin(2 * Math.PI * 659.25 * t) * 0.3) * env(t, 0.28, 0.003, 0.08) * 0.55;
-  });
-  saturate(d, 1.5);
-  save(dir, "chop", d);
-
-  // Loop: rhythmic pattern
-  d = render("loop", 1.6, (t) => {
+  d = render("loop", 1.4, (t) => {
     const step = Math.floor(t * 8) % 8;
     const f = [110, 146.83, 164.81, 196, 220, 196, 164.81, 146.83][step];
     const local = (t * 8) % 1;
     return (Math.sin(2 * Math.PI * f * t) * 0.3 + Math.sin(2 * Math.PI * f * 2 * t) * 0.1) * env(local, 1, 0.01, 0.18);
   });
-  save(dir, "loop", d);
+  save(dir, "loop", applyStyleBus(d, "trap"));
 
-  // Air: atmospheric
-  d = render("air", 1.2, (t) => {
-    return (noise() * 0.15 + Math.sin(2 * Math.PI * 660 * t) * 0.12 + Math.sin(2 * Math.PI * 990 * t) * 0.06) * env(t, 1.2, 0.06, 0.5);
-  });
-  save(dir, "air", d);
+  d = render("air", 1.0, (t) => (noise() * 0.12 + Math.sin(2 * Math.PI * 660 * t) * 0.1 + Math.sin(2 * Math.PI * 990 * t) * 0.05) * env(t, 1.0, 0.06, 0.45));
+  save(dir, "air", applyStyleBus(d, "trap"));
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// PACK 2: BOOM BAP — dusty, lo-fi, compressed, warm
+// BOOM BAP — warm, dusty, lo-fi, compressed, vinyl character
 // ═══════════════════════════════════════════════════════════════════════════════
 function generateBoomBap(dir) {
   process.stdout.write("boom-bap:\n");
 
-  // Kick: warm, compressed, boom-bap style
-  let d = render("kick", 0.48, (t) => {
-    const f = 58 + 90 * Math.exp(-t * 14);
-    const sub = Math.sin(2 * Math.PI * f * t) * env(t, 0.48, 0.002, 0.18);
-    const knock = Math.sin(2 * Math.PI * 160 * t) * Math.exp(-t * 50) * 0.35;
-    return sub + knock;
+  let d;
+  d = render("kick", 0.45, (t) => {
+    const f = 60 + 70 * Math.exp(-t * 12);
+    return (Math.sin(2 * Math.PI * f * t) * env(t, 0.45, 0.002, 0.16) +
+            Math.sin(2 * Math.PI * 150 * t) * Math.exp(-t * 45) * 0.35);
   });
-  lowpass(d, 3200);
-  saturate(d, 3.5);
-  compress(d, { threshold: -8, ratio: 6, attack: 0.001, release: 0.06 });
-  save(dir, "kick", d);
+  save(dir, "kick", applyStyleBus(d, "boom-bap"));
 
-  // Snare: dusty, filtered
-  d = render("snare", 0.32, (t) => {
-    const body = Math.sin(2 * Math.PI * 175 * t) * env(t, 0.32, 0.001, 0.08);
-    const n = noise() * env(t, 0.32, 0.001, 0.05) * 0.6;
-    return body * 0.45 + n;
+  d = render("snare", 0.3, (t) => {
+    return (Math.sin(2 * Math.PI * 170 * t) * env(t, 0.3, 0.001, 0.07) * 0.45 +
+            noise() * env(t, 0.3, 0.001, 0.04) * 0.65);
   });
-  lowpass(d, 6000);
-  saturate(d, 3);
-  compress(d, { threshold: -10, ratio: 4 });
-  d = reverb(d, { preMs: 10, shortMs: 35, shortGain: 0.18, longMs: 80, longGain: 0.08 });
-  save(dir, "snare", d);
+  save(dir, "snare", applyStyleBus(d, "boom-bap"));
 
-  // Clap: filtered, gritty
-  d = render("clap", 0.28, (t) => {
-    const hits = [0, 0.014, 0.028, 0.042];
-    let v = 0;
-    for (const h of hits) { if (t > h) v += noise() * Math.exp(-((t - h) * 38)) * 0.4; }
+  d = render("clap", 0.25, (t) => {
+    let v = 0; for (const h of [0, 0.013, 0.026, 0.04]) if (t > h) v += noise() * Math.exp(-((t - h) * 36)) * 0.4;
     return v;
   });
-  bandpass(d, 600, 4500);
-  saturate(d, 3);
-  save(dir, "clap", d);
+  save(dir, "clap", applyStyleBus(d, "boom-bap"));
 
-  // Closed hat: lo-fi, crunchy
-  d = render("closed-hat", 0.1, (t) => {
-    return noise() * env(t, 0.1, 0.001, 0.022) * 0.7;
+  d = render("closed-hat", 0.09, (t) => noise() * env(t, 0.09, 0.001, 0.02) * 0.7);
+  save(dir, "closed-hat", applyStyleBus(d, "boom-bap"));
+
+  d = render("open-hat", 0.38, (t) => (noise() * 0.5 + Math.sin(2 * Math.PI * 5800 * t) * 0.12) * env(t, 0.38, 0.002, 0.16));
+  save(dir, "open-hat", applyStyleBus(d, "boom-bap"));
+
+  d = render("808", 1.2, (t) => Math.sin(2 * Math.PI * (54 - t * 7) * t) * env(t, 1.2, 0.006, 0.5) * 0.85);
+  save(dir, "808", applyStyleBus(d, "boom-bap"));
+
+  d = render("sub-bass", 0.9, (t) => Math.sin(2 * Math.PI * 50 * t) * env(t, 0.9, 0.025, 0.4) * 0.8);
+  save(dir, "sub-bass", applyStyleBus(d, "boom-bap"));
+
+  d = render("perc", 0.16, (t) => (Math.sin(2 * Math.PI * 460 * t) + noise() * 0.35) * env(t, 0.16, 0.001, 0.035));
+  save(dir, "perc", applyStyleBus(d, "boom-bap"));
+
+  d = render("rim", 0.11, (t) => (Math.sin(2 * Math.PI * 820 * t) + Math.sin(2 * Math.PI * 1550 * t) * 0.35) * env(t, 0.11, 0.0005, 0.022));
+  save(dir, "rim", applyStyleBus(d, "boom-bap"));
+
+  d = render("crash", 1.5, (t) => noise() * env(t, 1.5, 0.001, 0.55) * 0.5);
+  save(dir, "crash", applyStyleBus(d, "boom-bap"));
+
+  d = render("ride", 0.55, (t) => (Math.sin(2 * Math.PI * 3200 * t) * 0.3 + Math.sin(2 * Math.PI * 5000 * t) * 0.18 + noise() * 0.12) * env(t, 0.55, 0.001, 0.18));
+  save(dir, "ride", applyStyleBus(d, "boom-bap"));
+
+  d = render("tom", 0.38, (t) => {
+    const f = 115 + 75 * Math.exp(-t * 7);
+    return (Math.sin(2 * Math.PI * f * t) * 0.65 + noise() * 0.08) * env(t, 0.38, 0.002, 0.11);
   });
-  highpass(d, 4000);
-  saturate(d, 2.5);
-  save(dir, "closed-hat", d);
+  save(dir, "tom", applyStyleBus(d, "boom-bap"));
 
-  // Open hat: dusty, longer
-  d = render("open-hat", 0.42, (t) => {
-    return (noise() * 0.5 + Math.sin(2 * Math.PI * 6200 * t) * 0.15) * env(t, 0.42, 0.002, 0.18);
+  d = render("vinyl", 1.8, (t) => {
+    return (Math.random() < 0.015 ? (Math.random() - 0.5) * 0.8 : 0) + noise() * 0.035 + Math.sin(2 * Math.PI * 28 * t) * 0.025;
   });
-  highpass(d, 3500);
-  saturate(d, 2);
-  save(dir, "open-hat", d);
+  save(dir, "vinyl", applyStyleBus(d, "boom-bap"));
 
-  // 808: warm, saturated boom
-  d = render("808", 1.3, (t) => {
-    return Math.sin(2 * Math.PI * (52 - t * 8) * t) * env(t, 1.3, 0.006, 0.55) * 0.85;
+  d = render("stab", 0.35, (t) => {
+    const f = 215;
+    return (Math.sin(2 * Math.PI * f * t) + Math.sin(2 * Math.PI * f * 1.26 * t) * 0.55 + Math.sin(2 * Math.PI * f * 1.5 * t) * 0.35) * env(t, 0.35, 0.005, 0.1) * 0.5;
   });
-  saturate(d, 4);
-  compress(d, { threshold: -14, ratio: 4, release: 0.25 });
-  save(dir, "808", d);
+  save(dir, "stab", applyStyleBus(d, "boom-bap"));
 
-  // Sub bass
-  d = render("sub-bass", 1.0, (t) => Math.sin(2 * Math.PI * 48 * t) * env(t, 1.0, 0.025, 0.45) * 0.8);
-  lowpass(d, 120);
-  save(dir, "sub-bass", d);
+  d = render("horn", 0.5, (t) => (Math.sin(2 * Math.PI * 275 * t) * 0.38 + Math.sin(2 * Math.PI * 550 * t) * 0.22 + Math.sin(2 * Math.PI * 825 * t) * 0.1) * env(t, 0.5, 0.008, 0.18) * 0.5);
+  save(dir, "horn", applyStyleBus(d, "boom-bap"));
 
-  // Perc: woodblock-ish
-  d = render("perc", 0.18, (t) => {
-    return (Math.sin(2 * Math.PI * 480 * t) + noise() * 0.3) * env(t, 0.18, 0.001, 0.04);
-  });
-  saturate(d, 2);
-  save(dir, "perc", d);
-
-  // Rim: dry click
-  d = render("rim", 0.12, (t) => {
-    return (Math.sin(2 * Math.PI * 860 * t) + Math.sin(2 * Math.PI * 1620 * t) * 0.4) * env(t, 0.12, 0.0005, 0.025);
-  });
-  save(dir, "rim", d);
-
-  // Crash: big noise hit with reverb
-  d = render("crash", 1.6, (t) => {
-    return noise() * env(t, 1.6, 0.001, 0.6) * 0.5;
-  });
-  highpass(d, 3000);
-  saturate(d, 1.5);
-  d = reverb(d, { preMs: 5, shortMs: 55, shortGain: 0.25, longMs: 180, longGain: 0.15 });
-  save(dir, "crash", d);
-
-  // Ride: metallic ping
-  d = render("ride", 0.6, (t) => {
-    return (Math.sin(2 * Math.PI * 3400 * t) * 0.35 + Math.sin(2 * Math.PI * 5200 * t) * 0.2 + noise() * 0.15) * env(t, 0.6, 0.001, 0.2);
-  });
-  highpass(d, 2800);
-  save(dir, "ride", d);
-
-  // Tom: tonal body
-  d = render("tom", 0.4, (t) => {
-    const f = 120 + 80 * Math.exp(-t * 8);
-    return (Math.sin(2 * Math.PI * f * t) * 0.7 + noise() * 0.08) * env(t, 0.4, 0.002, 0.12);
-  });
-  saturate(d, 2);
-  save(dir, "tom", d);
-
-  // Vinyl crackle texture
-  d = render("vinyl", 2.0, (t) => {
-    const crackle = (Math.random() < 0.02 ? (Math.random() - 0.5) * 0.8 : 0);
-    const hiss = noise() * 0.04;
-    const rumble = Math.sin(2 * Math.PI * 30 * t) * 0.03;
-    return crackle + hiss + rumble;
-  });
-  save(dir, "vinyl", d);
-
-  // Stab: filtered chord
-  d = render("stab", 0.4, (t) => {
-    const f = 220;
-    return (Math.sin(2 * Math.PI * f * t) + Math.sin(2 * Math.PI * f * 1.26 * t) * 0.6 + Math.sin(2 * Math.PI * f * 1.5 * t) * 0.4) * env(t, 0.4, 0.005, 0.12) * 0.5;
-  });
-  lowpass(d, 2800);
-  saturate(d, 2.5);
-  save(dir, "stab", d);
-
-  // Horn: brassy stab
-  d = render("horn", 0.55, (t) => {
-    return (Math.sin(2 * Math.PI * 280 * t) * 0.4 + Math.sin(2 * Math.PI * 560 * t) * 0.25 + Math.sin(2 * Math.PI * 840 * t) * 0.12) * env(t, 0.55, 0.008, 0.2) * 0.5;
-  });
-  saturate(d, 3);
-  save(dir, "horn", d);
-
-  // Bass pluck
-  d = render("bass", 0.6, (t) => {
-    return Math.sin(2 * Math.PI * 73.42 * t) * env(t, 0.6, 0.003, 0.15) * 0.8;
-  });
-  lowpass(d, 800);
-  saturate(d, 2);
-  save(dir, "bass", d);
+  d = render("bass", 0.55, (t) => Math.sin(2 * Math.PI * 73.42 * t) * env(t, 0.55, 0.003, 0.14) * 0.8);
+  save(dir, "bass", applyStyleBus(d, "boom-bap"));
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// PACK 3: DRILL — sliding 808s, rapid hats, dark textures
+// DRILL — dark, menacing, deep sub, metallic rapid hats
 // ═══════════════════════════════════════════════════════════════════════════════
 function generateDrill(dir) {
   process.stdout.write("drill:\n");
 
-  // Kick: punchy, aggressive
-  let d = render("kick", 0.5, (t) => {
-    const f = 55 + 140 * Math.exp(-t * 20);
-    const sub = Math.sin(2 * Math.PI * f * t) * env(t, 0.5, 0.001, 0.16);
-    const click = (t < 0.005 ? noise() * (1 - t / 0.005) : 0) * 0.5;
-    return (sub + click) * 1.15;
+  let d;
+  d = render("kick", 0.48, (t) => {
+    const f = 52 + 160 * Math.exp(-t * 24);
+    return (Math.sin(2 * Math.PI * f * t) * env(t, 0.48, 0.001, 0.14) +
+            (t < 0.004 ? noise() * (1 - t / 0.004) * 0.55 : 0)) * 1.15;
   });
-  saturate(d, 3);
-  compress(d, { threshold: -8, ratio: 5, attack: 0.001, release: 0.06 });
-  save(dir, "kick", d);
+  save(dir, "kick", applyStyleBus(d, "drill"));
 
-  // Snare: sharp, aggressive
-  d = render("snare", 0.3, (t) => {
-    const body = Math.sin(2 * Math.PI * 210 * t) * env(t, 0.3, 0.001, 0.07);
-    const snap = Math.sin(2 * Math.PI * 4200 * t) * Math.exp(-t * 80) * 0.35;
-    const n = noise() * env(t, 0.3, 0.001, 0.04) * 0.65;
-    return body * 0.35 + snap + n;
+  d = render("snare", 0.28, (t) => {
+    return (Math.sin(2 * Math.PI * 215 * t) * env(t, 0.28, 0.001, 0.06) * 0.35 +
+            Math.sin(2 * Math.PI * 4500 * t) * Math.exp(-t * 85) * 0.35 +
+            noise() * env(t, 0.28, 0.001, 0.035) * 0.7);
   });
-  bandpass(d, 300, 8000);
-  saturate(d, 2.5);
-  compress(d, { threshold: -10, ratio: 4 });
-  save(dir, "snare", d);
+  save(dir, "snare", applyStyleBus(d, "drill"));
 
-  // Clap: tight, filtered
-  d = render("clap", 0.25, (t) => {
-    const hits = [0, 0.01, 0.02, 0.032];
-    let v = 0;
-    for (const h of hits) { if (t > h) v += noise() * Math.exp(-((t - h) * 50)) * 0.5; }
+  d = render("clap", 0.22, (t) => {
+    let v = 0; for (const h of [0, 0.009, 0.019, 0.03]) if (t > h) v += noise() * Math.exp(-((t - h) * 55)) * 0.5;
     return v;
   });
-  bandpass(d, 1000, 7000);
-  saturate(d, 2.5);
-  save(dir, "clap", d);
+  save(dir, "clap", applyStyleBus(d, "drill"));
 
-  // Closed hat: super tight, metallic
-  d = render("closed-hat", 0.06, (t) => {
-    return (noise() * 0.7 + Math.sin(2 * Math.PI * 9800 * t) * 0.15) * env(t, 0.06, 0.0005, 0.012);
+  d = render("closed-hat", 0.05, (t) => (noise() * 0.72 + Math.sin(2 * Math.PI * 10500 * t) * 0.15) * env(t, 0.05, 0.0003, 0.01));
+  save(dir, "closed-hat", applyStyleBus(d, "drill"));
+
+  d = render("open-hat", 0.45, (t) => (noise() * 0.52 + Math.sin(2 * Math.PI * 8800 * t) * 0.18) * env(t, 0.45, 0.001, 0.19));
+  save(dir, "open-hat", applyStyleBus(d, "drill"));
+
+  d = render("808-slide", 2.2, (t) => Math.tanh(Math.sin(2 * Math.PI * (68 - t * 30) * t) * 2.8) * env(t, 2.2, 0.004, 0.9) * 0.85);
+  save(dir, "808-slide", applyStyleBus(d, "drill"));
+
+  d = render("808", 2.0, (t) => Math.tanh(Math.sin(2 * Math.PI * (48 - t * 5) * t) * 2.5) * env(t, 2.0, 0.005, 0.8) * 0.82);
+  save(dir, "808", applyStyleBus(d, "drill"));
+
+  d = render("sub-bass", 1.2, (t) => Math.sin(2 * Math.PI * 42 * t) * env(t, 1.2, 0.02, 0.5) * 0.85);
+  save(dir, "sub-bass", applyStyleBus(d, "drill"));
+
+  d = render("perc", 0.18, (t) => (Math.sin(2 * Math.PI * 650 * t) + Math.sin(2 * Math.PI * 1400 * t) * 0.3 + noise() * 0.22) * env(t, 0.18, 0.001, 0.04));
+  save(dir, "perc", applyStyleBus(d, "drill"));
+
+  d = render("rim", 0.12, (t) => (Math.sin(2 * Math.PI * 1150 * t) + Math.sin(2 * Math.PI * 2300 * t) * 0.42) * env(t, 0.12, 0.0005, 0.025));
+  save(dir, "rim", applyStyleBus(d, "drill"));
+
+  d = render("impact", 1.4, (t) => {
+    const f = 65 - t * 32;
+    return (Math.sin(2 * Math.PI * f * t) * 0.6 + noise() * 0.14) * env(t, 1.4, 0.003, 0.5);
   });
-  highpass(d, 6500);
-  saturate(d, 2);
-  save(dir, "closed-hat", d);
+  save(dir, "impact", applyStyleBus(d, "drill"));
 
-  // Open hat: bright, longer
-  d = render("open-hat", 0.48, (t) => {
-    return (noise() * 0.5 + Math.sin(2 * Math.PI * 8200 * t) * 0.18) * env(t, 0.48, 0.001, 0.2);
+  d = render("riser", 2.0, (t) => {
+    const lift = t / 2.0;
+    return (Math.sin(2 * Math.PI * (280 + lift * lift * 3000) * t) * 0.22 + noise() * 0.16) * lift * lift * env(t, 2.0, 0.05, 1.6);
   });
-  highpass(d, 5000);
-  saturate(d, 1.8);
-  save(dir, "open-hat", d);
+  save(dir, "riser", applyStyleBus(d, "drill"));
 
-  // 808 SLIDE: pitch drops dramatically (drill signature)
-  d = render("808-slide", 2.0, (t) => {
-    const f = 65 - t * 28; // aggressive pitch slide
-    return Math.tanh(Math.sin(2 * Math.PI * f * t) * 2.5) * env(t, 2.0, 0.005, 0.8) * 0.85;
-  });
-  saturate(d, 3.5);
-  compress(d, { threshold: -12, ratio: 5, release: 0.4 });
-  save(dir, "808-slide", d);
+  d = render("fx", 0.9, (t) => (Math.sin(2 * Math.PI * (260 + Math.sin(t * 14) * 110) * t) + noise() * 0.18) * env(t, 0.9, 0.015, 0.32) * 0.42);
+  save(dir, "fx", applyStyleBus(d, "drill"));
 
-  // 808: sustained sub
-  d = render("808", 1.8, (t) => {
-    return Math.tanh(Math.sin(2 * Math.PI * (50 - t * 6) * t) * 2.2) * env(t, 1.8, 0.006, 0.7) * 0.8;
-  });
-  saturate(d, 3);
-  compress(d, { threshold: -14, ratio: 4, release: 0.3 });
-  save(dir, "808", d);
+  d = render("vocal", 0.7, (t) => (Math.sin(2 * Math.PI * 158 * t) * 0.32 + Math.sin(2 * Math.PI * 237 * t) * 0.18 + Math.sin(2 * Math.PI * 316 * t) * 0.1) * env(t, 0.7, 0.025, 0.28));
+  save(dir, "vocal", applyStyleBus(d, "drill"));
 
-  // Sub bass
-  d = render("sub-bass", 1.0, (t) => Math.sin(2 * Math.PI * 45 * t) * env(t, 1.0, 0.02, 0.4) * 0.85);
-  lowpass(d, 120);
-  save(dir, "sub-bass", d);
+  d = render("chop", 0.28, (t) => (Math.sin(2 * Math.PI * 330 * t) + Math.sin(2 * Math.PI * 495 * t) * 0.48) * env(t, 0.28, 0.003, 0.085) * 0.52);
+  save(dir, "chop", applyStyleBus(d, "drill"));
 
-  // Perc: dark, metallic
-  d = render("perc", 0.2, (t) => {
-    return (Math.sin(2 * Math.PI * 620 * t) + Math.sin(2 * Math.PI * 1340 * t) * 0.3 + noise() * 0.2) * env(t, 0.2, 0.001, 0.045);
-  });
-  saturate(d, 2);
-  save(dir, "perc", d);
-
-  // Rim: sharp, high
-  d = render("rim", 0.14, (t) => {
-    return (Math.sin(2 * Math.PI * 1100 * t) + Math.sin(2 * Math.PI * 2200 * t) * 0.45) * env(t, 0.14, 0.0005, 0.028);
-  });
-  save(dir, "rim", d);
-
-  // Impact: dark cinematic
-  d = render("impact", 1.5, (t) => {
-    const f = 70 - t * 35;
-    return (Math.sin(2 * Math.PI * f * t) * 0.65 + noise() * 0.15) * env(t, 1.5, 0.003, 0.55);
-  });
-  saturate(d, 2.5);
-  compress(d, { threshold: -10, ratio: 4 });
-  save(dir, "impact", d);
-
-  // Riser: tension builder
-  d = render("riser", 2.2, (t) => {
-    const lift = t / 2.2;
-    const f = 300 + lift * lift * 2800;
-    return (Math.sin(2 * Math.PI * f * t) * 0.25 + noise() * 0.18) * lift * lift * env(t, 2.2, 0.05, 1.8);
-  });
-  save(dir, "riser", d);
-
-  // FX: dark atmosphere
-  d = render("fx", 1.0, (t) => {
-    return (Math.sin(2 * Math.PI * (280 + Math.sin(t * 16) * 120) * t) + noise() * 0.2) * env(t, 1.0, 0.015, 0.35) * 0.45;
-  });
-  saturate(d, 1.8);
-  save(dir, "fx", d);
-
-  // Vocal chop: dark, pitched down
-  d = render("vocal", 0.75, (t) => {
-    return (Math.sin(2 * Math.PI * 165 * t) * 0.35 + Math.sin(2 * Math.PI * 247.5 * t) * 0.2 + Math.sin(2 * Math.PI * 330 * t) * 0.12) * env(t, 0.75, 0.025, 0.3);
-  });
-  save(dir, "vocal", d);
-
-  // Chop: dark stab
-  d = render("chop", 0.3, (t) => {
-    return (Math.sin(2 * Math.PI * 350 * t) + Math.sin(2 * Math.PI * 525 * t) * 0.5) * env(t, 0.3, 0.003, 0.09) * 0.55;
-  });
-  saturate(d, 1.8);
-  save(dir, "chop", d);
-
-  // Loop: drill rhythm
-  d = render("loop", 1.8, (t) => {
+  d = render("loop", 1.6, (t) => {
     const step = Math.floor(t * 8) % 8;
     const f = [98, 130.81, 146.83, 174.61, 196, 174.61, 146.83, 130.81][step];
     const local = (t * 8) % 1;
-    return (Math.sin(2 * Math.PI * f * t) * 0.3 + Math.sin(2 * Math.PI * f * 2 * t) * 0.1) * env(local, 1, 0.01, 0.2);
+    return (Math.sin(2 * Math.PI * f * t) * 0.28 + Math.sin(2 * Math.PI * f * 2 * t) * 0.08) * env(local, 1, 0.01, 0.2);
   });
-  save(dir, "loop", d);
+  save(dir, "loop", applyStyleBus(d, "drill"));
 
-  // Air: dark ambient
-  d = render("air", 1.5, (t) => {
-    return (noise() * 0.12 + Math.sin(2 * Math.PI * 440 * t) * 0.1 + Math.sin(2 * Math.PI * 660 * t) * 0.05) * env(t, 1.5, 0.08, 0.6);
-  });
-  save(dir, "air", d);
+  d = render("air", 1.3, (t) => (noise() * 0.1 + Math.sin(2 * Math.PI * 420 * t) * 0.08 + Math.sin(2 * Math.PI * 630 * t) * 0.04) * env(t, 1.3, 0.08, 0.55));
+  save(dir, "air", applyStyleBus(d, "drill"));
 }
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// Main
 // ═══════════════════════════════════════════════════════════════════════════════
 const baseDir = join(process.cwd(), "public", "samples");
 const packs = [
@@ -582,5 +412,4 @@ for (const pack of packs) {
   mkdirSync(dir, { recursive: true });
   pack.fn(dir);
 }
-
-console.log(`\nGenerated ${packs.length * 16} WAV samples in ${packs.map((p) => p.name).join(", ")}`);
+console.log(`\nGenerated ${packs.length * 16} samples with genre-specific style buses`);
