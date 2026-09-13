@@ -303,9 +303,10 @@ button {
   inset: 0;
   display: grid;
   place-items: center;
-  padding: 110px 8vw 90px;
+  padding: 90px 6vw 70px;
   perspective: 1400px;
   pointer-events: none;
+  overflow-y: auto;
 }
 
 .instrument-space[data-mode="piano"] {
@@ -328,7 +329,7 @@ button {
 
 .sampler-shell {
   width: min(96vw, 1100px);
-  padding: 24px;
+  padding: 18px 20px 14px;
 }
 
 .instrument-title,
@@ -342,7 +343,7 @@ button {
 }
 
 .instrument-title {
-  margin-bottom: 16px;
+  margin-bottom: 10px;
 }
 
 .instrument-title small,
@@ -428,13 +429,13 @@ button {
 
 .sampler-grid {
   display: grid;
-  grid-template-columns: repeat(8, minmax(100px, 1fr));
-  gap: 12px;
+  grid-template-columns: repeat(8, minmax(80px, 1fr));
+  gap: 8px;
 }
 
 .air-pad {
   position: relative;
-  height: clamp(100px, 12vw, 155px);
+  height: clamp(70px, 8vh, 95px);
   overflow: hidden;
   border: 1px solid rgba(255, 249, 238, 0.22);
   border-radius: 8px;
