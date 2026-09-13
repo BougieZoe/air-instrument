@@ -429,13 +429,13 @@ button {
 
 .sampler-grid {
   display: grid;
-  grid-template-columns: repeat(8, minmax(80px, 1fr));
-  gap: 8px;
+  grid-template-columns: repeat(8, minmax(88px, 1fr));
+  gap: 9px;
 }
 
 .air-pad {
   position: relative;
-  height: clamp(70px, 8vh, 95px);
+  height: clamp(82px, 9.5vh, 110px);
   overflow: hidden;
   border: 1px solid rgba(255, 249, 238, 0.22);
   border-radius: 8px;
