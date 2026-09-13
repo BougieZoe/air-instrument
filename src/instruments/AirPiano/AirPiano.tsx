@@ -76,7 +76,7 @@ export const AirPiano = forwardRef<InstrumentHandle, AirPianoProps>(({ audioRef,
 
   return (
     <section className="instrument-shell piano-shell" aria-label="Air Piano">
-      <div className="instrument-title"><span>AIR PIANO</span><small>POLYPHONIC 2 OCTAVES</small></div>
+      <div className="instrument-title"><span>AIR PIANO</span><small>POLYPHONIC 3 OCTAVES</small></div>
       <div className="piano-frame">
         {pianoLayout.map((key) => (<PianoKey key={key.id} item={key} ref={(node) => { if (node) keyRefs.current.set(key.id, node); else keyRefs.current.delete(key.id); }} />))}
         <div className="piano-hit-layer">
@@ -88,7 +88,7 @@ export const AirPiano = forwardRef<InstrumentHandle, AirPianoProps>(({ audioRef,
           ))}
         </div>
       </div>
-      <div className="instrument-footer"><span>C3 - C5</span><span>SUSTAINED RELEASE</span></div>
+      <div className="instrument-footer"><span>C3 - C6</span><span>SUSTAINED RELEASE</span></div>
     </section>
   );
 });

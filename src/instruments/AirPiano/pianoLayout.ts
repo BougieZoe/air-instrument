@@ -32,4 +32,4 @@ export function generatePianoLayout(startOctave = 3, octaveCount = 2): PianoKeyD
   return keys;
 }
 
-export const pianoLayout = generatePianoLayout(3, 2);
+export const pianoLayout = generatePianoLayout(3, 3);

@@ -13,7 +13,7 @@ import { InteractionController } from "../hand/InteractionController";
 import type { InteractionPoint } from "../hand/types";
 import { FINGER_COUNT } from "../hand/types";
 import { getInstrument, getInstruments } from "../instruments/registry";
-import { trapPack } from "../instruments/AirSampler/sampleMap";
+import { type GenrePack, defaultPack, allPacks } from "../instruments/AirSampler/packs";
 import type { InstrumentHandle, InstrumentMode } from "../instruments/types";
 import { AudioReactive } from "../visuals/AudioReactive";
 import { InteractionFeedback } from "../visuals/InteractionFeedback";
@@ -36,6 +36,7 @@ export default function AirInstrument() {
   const [fps,           setFps]           = useState(0);
   const [debugInfo,     setDebugInfo]     = useState<DebugInfo>(emptyDebugInfo);
   const [accompaniment, setAccompaniment] = useState<AccompanimentViewState>(emptyAccompanimentState);
+  const [currentPack,   setCurrentPack]   = useState<GenrePack>(defaultPack);
 
   const videoRef      = useRef<HTMLVideoElement>(null);
   const stageRef      = useRef<HTMLDivElement>(null);
@@ -56,9 +57,14 @@ export default function AirInstrument() {
   }, [tracker]);
 
   const ensureAudio = useCallback(async () => {
-    if (!audioRef.current) { audioRef.current = new AudioEngine(); await audioRef.current.loadSamplePack(trapPack); }
+    if (!audioRef.current) { audioRef.current = new AudioEngine(); await audioRef.current.loadSamplePack(currentPack); }
     else await audioRef.current.resume();
     return audioRef.current;
+  }, [currentPack]);
+
+  const loadPack = useCallback(async (pack: GenrePack) => {
+    setCurrentPack(pack);
+    if (audioRef.current) await audioRef.current.loadSamplePack(pack);
   }, []);
 
   const start = useCallback(async () => {
@@ -153,6 +159,8 @@ export default function AirInstrument() {
 
   const activePlugin = getInstrument(mode) ?? getInstruments()[0];
 
+  const samplerProps = mode === "sampler" ? { pack: currentPack, onPackChange: loadPack } : {};
+
   return (
     <main className="air-instrument" ref={stageRef}>
       <CameraView ref={videoRef} hasCamera={cameraReady} />
@@ -165,7 +173,7 @@ export default function AirInstrument() {
         </div>
       </header>
       <div className="instrument-space" data-mode={activePlugin.mode}>
-        <activePlugin.component ref={instrumentRef} audioRef={audioRef} onFirstInteraction={() => setHasInteracted(true)} />
+        <activePlugin.component ref={instrumentRef} audioRef={audioRef} onFirstInteraction={() => setHasInteracted(true)} {...samplerProps} />
       </div>
       <AudioImport state={accompaniment} onImport={importAudio} onPlay={() => updateAccompaniment("play")} onPause={() => updateAccompaniment("pause")} onRestart={() => updateAccompaniment("restart")}
         onVolume={(volume) => { audioRef.current?.accompaniment.setVolume(volume); if (audioRef.current) setAccompaniment({ ...audioRef.current.accompaniment.state }); }} />

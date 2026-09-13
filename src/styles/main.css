@@ -355,6 +355,36 @@ button {
   margin-top: 14px;
 }
 
+.pack-switcher {
+  display: flex;
+  gap: 4px;
+}
+
+.pack-btn {
+  background: rgba(255, 249, 238, 0.06);
+  border: 1px solid rgba(255, 249, 238, 0.12);
+  border-radius: 4px;
+  color: rgba(255, 249, 238, 0.45);
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  padding: 3px 7px;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+
+.pack-btn:hover {
+  background: rgba(255, 249, 238, 0.1);
+  color: rgba(255, 249, 238, 0.7);
+  border-color: rgba(255, 249, 238, 0.25);
+}
+
+.pack-btn.active {
+  background: rgba(255, 249, 238, 0.14);
+  color: #fff9ee;
+  border-color: rgba(255, 249, 238, 0.35);
+}
+
 .sampler-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(92px, 1fr));

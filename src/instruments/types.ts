@@ -27,7 +27,8 @@ export type InstrumentProps = {
   onFirstInteraction: () => void;
 };
 
-export type InstrumentComponent = ForwardRefExoticComponent<InstrumentProps & RefAttributes<InstrumentHandle>>;
+/* eslint-disable @typescript-eslint/no-explicit-any */
+export type InstrumentComponent = ForwardRefExoticComponent<any & RefAttributes<InstrumentHandle>>;
 
 /**
  * Plugin descriptor. Adding an instrument = implementing InstrumentHandle +
