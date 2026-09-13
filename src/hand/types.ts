@@ -4,10 +4,19 @@ export type Point3 = {
   z: number;
 };
 
-export type GestureName = "INDEX_POINT" | "PINCH" | "OPEN_HAND" | "UNKNOWN";
+export type GestureName =
+  | "INDEX_POINT"
+  | "PINCH"
+  | "OPEN_HAND"
+  | "FIST"
+  | "PEACE"
+  | "THUMBS_UP"
+  | "UNKNOWN";
 
 /** MediaPipe landmark indices for the 5 fingertips: thumb, index, middle, ring, pinky. */
 export const FINGER_TIP_INDICES = [4, 8, 12, 16, 20] as const;
+/** MCP joints (base of each finger) for hand-size measurement. */
+export const FINGER_MCP_INDICES = [2, 5, 9, 13, 17] as const;
 export const FINGER_COUNT = FINGER_TIP_INDICES.length;
 
 export type HandInput = {
@@ -27,6 +36,8 @@ export type HandInput = {
   /** Index-finger speed, kept for gesture-level triggers and debug display. */
   speed: number;
   timestamp: number;
+  /** Hand size ratio (wrist→middleMCP distance). Used for adaptive thresholds. */
+  handSize: number;
 };
 
 export type InteractionState = "IDLE" | "HOVER" | "PRESS" | "RELEASE";

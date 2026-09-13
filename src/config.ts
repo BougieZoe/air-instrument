@@ -22,26 +22,35 @@ export const ANALYSER_FFT_SIZE    = 512;
 export const ANALYSER_SMOOTHING   = 0.82;
 
 // ─── Velocity (0-1 linear gain applied to triggered sounds) ─────────────────
-export const VELOCITY_HAND_MIN    = 0.52; // min velocity for air-triggered sampler
-export const VELOCITY_HAND_RANGE  = 0.46; // multiplied by speed: total max = 0.98
-export const VELOCITY_MOUSE       = 0.86; // fixed velocity for mouse clicks
+export const VELOCITY_HAND_MIN    = 0.52;
+export const VELOCITY_HAND_RANGE  = 0.46;
+export const VELOCITY_MOUSE       = 0.86;
 export const PIANO_VELOCITY_HAND_MIN   = 0.48;
 export const PIANO_VELOCITY_HAND_RANGE = 0.44;
 export const PIANO_VELOCITY_MOUSE      = 0.72;
 
 // ─── Gesture recognition (MediaPipe normalized landmark space, 0-1) ─────────
-export const PINCH_MIN_DIST    = 0.035; // below this = fully pinched
-export const PINCH_RANGE       = 0.085; // distance range over which pinch 0→1
-export const PINCH_THRESHOLD   = 0.64;  // pinch strength to register as PINCH gesture
-export const INDEX_RAISE_DELTA = 0.03;  // how far tip.y must be above palm.y
-export const OPEN_HAND_INDEX_DIST = 0.22; // min wrist→indexTip for open hand
-export const OPEN_HAND_THUMB_DIST = 0.16; // min wrist→thumbTip for open hand
+// All thresholds are BASE values — scaled by handSizeRatio at runtime.
+export const PINCH_MIN_DIST    = 0.035;
+export const PINCH_RANGE       = 0.085;
+export const PINCH_THRESHOLD   = 0.64;
+export const INDEX_RAISE_DELTA = 0.03;
+export const OPEN_HAND_INDEX_DIST = 0.22;
+export const OPEN_HAND_THUMB_DIST = 0.16;
+
+// ─── Adaptive gesture: per-finger extended/folded classification ─────────────
+// A finger is "extended" if tip.y < mcp.y - FINGER_EXTEND_MARGIN (scaled by hand size)
+export const FINGER_EXTEND_MARGIN = 0.025;
+// Fist: all 4 non-thumb fingers folded (tip above mcp by margin)
+export const FIST_FOLD_MARGIN = 0.01;
+// Peace: index + middle extended, ring + pinky folded
+// Thumbs up: thumb extended (tip.y < wrist.y - margin), all others folded
 
 // ─── Interaction controller ──────────────────────────────────────────────────
-export const DWELL_MS          = 420;  // ms hovering before auto-press
-export const COOLDOWN_MS       = 600;  // ms between presses on same target
-export const SPEED_THRESHOLD   = 0.22; // normalized speed to trigger press
-export const Z_THRESHOLD       = -0.04; // depth push toward camera
+export const DWELL_MS          = 420;
+export const COOLDOWN_MS       = 600;
+export const SPEED_THRESHOLD   = 0.22;
+export const Z_THRESHOLD       = -0.04;
 
 // ─── Coordinate mapper (normalized 0-1 camera crop region) ──────────────────
 export const CAMERA_BOUNDS = {
@@ -52,13 +61,23 @@ export const CAMERA_BOUNDS = {
 };
 
 // ─── Hand smoothing ───────────────────────────────────────────────────────────
-export const SMOOTHING_ALPHA     = 0.42; // exponential smoothing factor (0=frozen, 1=raw)
-export const SPEED_NORM_FACTOR   = 2.4;  // m/s equivalent for normalizing to 0-1
-export const MIN_FRAME_DT_MS     = 12;   // clamp dt to avoid division-by-zero
+export const SMOOTHING_ALPHA     = 0.42;
+export const SPEED_NORM_FACTOR   = 2.4;
+export const MIN_FRAME_DT_MS     = 12;
+// Adaptive smoothing: alpha scales between MIN and MAX based on speed
+export const SMOOTHING_ALPHA_MIN = 0.18;  // slow movement: heavy smoothing
+export const SMOOTHING_ALPHA_MAX = 0.85;  // fast movement: low latency
+export const SMOOTHING_SPEED_FLOOR = 0.08; // below this speed → use min alpha
+export const SMOOTHING_SPEED_CEIL  = 0.55; // above this speed → use max alpha
+
+// ─── Calibration ──────────────────────────────────────────────────────────────
+export const CALIBRATION_FRAMES       = 30;  // frames to average for hand size
+export const CALIBRATION_REFERENCE_SIZE = 0.22; // reference hand size (wrist→middleMCP distance)
+export const CALIBRATION_TIMEOUT_MS   = 5000;  // max time to wait for calibration
 
 // ─── Piano hit-test insets (fraction of key width) ───────────────────────────
-export const WHITE_KEY_INSET_RATIO = 0.08; // shrink white key hit area by this fraction
-export const BLACK_KEY_INSET_RATIO = 0.03; // shrink black key hit area by this fraction
+export const WHITE_KEY_INSET_RATIO = 0.08;
+export const BLACK_KEY_INSET_RATIO = 0.03;
 
 // ─── Audio reactive visuals ──────────────────────────────────────────────────
 export const REACTIVE_OPACITY_BASE  = 0.16;
@@ -70,4 +89,4 @@ export const REACTIVE_SCALE_RANGE   = 0.88;
 export const MIN_CURSOR_OPACITY = 0.18;
 
 // ─── Sample player debounce ───────────────────────────────────────────────────
-export const SAMPLE_DEBOUNCE_S = 0.075; // seconds between re-triggers of same sample
+export const SAMPLE_DEBOUNCE_S = 0.075;

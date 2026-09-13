@@ -920,3 +920,52 @@ button {
   }
 
 }
+
+/* ── Calibration Overlay ─────────────────────────────────────────────────── */
+.calibration-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(6px);
+  animation: calFadeIn 0.3s ease;
+}
+
+.calibration-box {
+  text-align: center;
+  padding: 40px 60px;
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.calibration-icon {
+  font-size: 64px;
+  margin-bottom: 16px;
+  animation: calPulse 1.5s ease-in-out infinite;
+}
+
+.calibration-title {
+  font-size: 22px;
+  font-weight: 600;
+  color: #fff;
+  margin-bottom: 8px;
+}
+
+.calibration-hint {
+  font-size: 15px;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+@keyframes calPulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.15); }
+}
+
+@keyframes calFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}

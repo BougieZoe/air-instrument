@@ -37,6 +37,7 @@ export default function AirInstrument() {
   const [debugInfo,     setDebugInfo]     = useState<DebugInfo>(emptyDebugInfo);
   const [accompaniment, setAccompaniment] = useState<AccompanimentViewState>(emptyAccompanimentState);
   const [currentPack,   setCurrentPack]   = useState<GenrePack>(defaultPack);
+  const [calibrating,   setCalibrating]   = useState(false);
 
   const videoRef      = useRef<HTMLVideoElement>(null);
   const stageRef      = useRef<HTMLDivElement>(null);
@@ -54,6 +55,7 @@ export default function AirInstrument() {
 
   useEffect(() => {
     tracker.init().then(() => console.log("[HandTracker] pre-init done, status:", tracker.status));
+    tracker.onCalibrationComplete = () => setCalibrating(false);
   }, [tracker]);
 
   const ensureAudio = useCallback(async () => {
@@ -77,6 +79,8 @@ export default function AirInstrument() {
       setStarted(true);
       setCameraReady(true);
       await engine.resume();
+      tracker.startCalibration();
+      setCalibrating(true);
       requestAnimationFrame(() => {
         const video = videoRef.current;
         if (video) { video.srcObject = stream; video.play().catch(console.warn); console.log("[Camera] stream attached"); }
@@ -180,6 +184,15 @@ export default function AirInstrument() {
       <InteractionFeedback pointsRef={pointsRef} />
       <AudioReactive audioRef={audioRef} />
       {instruction && <div className="gesture-instruction">{instruction}</div>}
+      {calibrating && (
+        <div className="calibration-overlay">
+          <div className="calibration-box">
+            <div className="calibration-icon">✋</div>
+            <div className="calibration-title">校准手型</div>
+            <div className="calibration-hint">张开手掌，保持不动...</div>
+          </div>
+        </div>
+      )}
       <DebugOverlay visible={debug} fps={fps} target={debugInfo.target} gesture={debugInfo.gesture} confidence={debugInfo.confidence} speed={debugInfo.speed} z={debugInfo.z} state={debugInfo.state} />
     </main>
   );
