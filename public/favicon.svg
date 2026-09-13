@@ -1,4 +1,17 @@
 <svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <rect width="64" height="64" rx="16" fill="#0A0F1C"/>
-  <path d="M18 18H46L18 46H46" stroke="#F7F9FC" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+  <rect width="64" height="64" rx="14" fill="#111318"/>
+  <!-- left dot -->
+  <circle cx="12" cy="32" r="3" fill="#fff" opacity="0.85"/>
+  <!-- left short bar -->
+  <rect x="18" y="24" width="4" height="16" rx="2" fill="#fff" opacity="0.85"/>
+  <!-- left mid bar -->
+  <rect x="25" y="18" width="4" height="28" rx="2" fill="#fff"/>
+  <!-- center tall bar -->
+  <rect x="32" y="10" width="4" height="44" rx="2" fill="#fff"/>
+  <!-- right mid bar -->
+  <rect x="39" y="18" width="4" height="28" rx="2" fill="#fff"/>
+  <!-- right short bar -->
+  <rect x="46" y="24" width="4" height="16" rx="2" fill="#fff" opacity="0.85"/>
+  <!-- right dot -->
+  <circle cx="56" cy="32" r="3" fill="#fff" opacity="0.85"/>
 </svg>
