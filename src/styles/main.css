@@ -874,4 +874,139 @@ button {
   [data-cursor-hover] {
     cursor: none;
   }
+
+  /* ── DJ Deck ── */
+  .dj-shell {
+    width: min(85vw, 900px);
+  }
+
+  .dj-decks {
+    display: flex;
+    gap: 14px;
+    align-items: stretch;
+    margin-bottom: 14px;
+  }
+
+  .dj-deck {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .dj-deck-label {
+    font-size: 9px;
+    font-weight: 700;
+    color: rgba(255, 249, 238, 0.55);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .dj-deck-sample {
+    color: rgba(255, 249, 238, 0.8);
+    font-weight: 600;
+  }
+
+  .dj-scrub-pad {
+    flex: 1;
+    min-height: 80px;
+    background: rgba(255, 249, 238, 0.03);
+    border: 1px solid rgba(255, 249, 238, 0.1);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: grab;
+    touch-action: none;
+    transition: background 0.15s, border-color 0.15s;
+  }
+
+  .dj-scrub-pad:hover {
+    background: rgba(255, 249, 238, 0.06);
+    border-color: rgba(255, 249, 238, 0.2);
+  }
+
+  .dj-scrub-pad.active {
+    background: rgba(255, 140, 50, 0.12);
+    border-color: rgba(255, 140, 50, 0.35);
+    cursor: grabbing;
+  }
+
+  .dj-scrub-hint {
+    font-size: 8px;
+    font-weight: 600;
+    color: rgba(255, 249, 238, 0.3);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    pointer-events: none;
+  }
+
+  .dj-crossfader {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    width: 70px;
+    flex-shrink: 0;
+  }
+
+  .dj-crossfader-label {
+    font-size: 8px;
+    font-weight: 700;
+    color: rgba(255, 249, 238, 0.5);
+    letter-spacing: 0.06em;
+    white-space: nowrap;
+  }
+
+  .dj-crossfader-slider {
+    writing-mode: vertical-lr;
+    direction: rtl;
+    appearance: slider-vertical;
+    width: 16px;
+    height: 80px;
+    accent-color: rgba(255, 140, 50, 0.8);
+  }
+
+  .dj-crossfader-value {
+    font-size: 9px;
+    font-weight: 700;
+    color: rgba(255, 249, 238, 0.6);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .dj-pad-grid {
+    display: grid;
+    grid-template-columns: repeat(8, 1fr);
+    gap: 5px;
+  }
+
+  .dj-pad {
+    background: rgba(255, 249, 238, 0.05);
+    border: 1px solid rgba(255, 249, 238, 0.1);
+    border-radius: 5px;
+    color: rgba(255, 249, 238, 0.65);
+    font-size: 8px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    padding: 8px 2px;
+    cursor: pointer;
+    transition: background 0.12s, border-color 0.12s, transform 0.12s;
+    text-transform: uppercase;
+  }
+
+  .dj-pad:hover {
+    background: rgba(255, 249, 238, 0.1);
+    border-color: rgba(255, 249, 238, 0.25);
+    transform: scale(1.04);
+  }
+
+  .dj-pad:active,
+  .dj-pad.deck-a,
+  .dj-pad.deck-b {
+    background: rgba(255, 140, 50, 0.18);
+    border-color: rgba(255, 140, 50, 0.4);
+    color: #fff;
+    transform: scale(0.97);
+  }
 }
