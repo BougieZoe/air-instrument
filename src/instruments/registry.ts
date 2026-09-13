@@ -8,8 +8,12 @@
  * Mirrors the harness philosophy: a runtime registry keyed by string id,
  * with register / get / list as the only API.
  */
+import { AirHarp } from "./AirHarp/AirHarp";
+import { AirHandpan } from "./AirHandpan/AirHandpan";
+import { AirKalimba } from "./AirKalimba/AirKalimba";
 import { AirPiano } from "./AirPiano/AirPiano";
 import { AirSampler } from "./AirSampler/AirSampler";
+import { AirTheremin } from "./AirTheremin/AirTheremin";
 import type { InstrumentPlugin } from "./types";
 
 const registry = new Map<string, InstrumentPlugin>();
@@ -29,3 +33,7 @@ export function getInstruments(): InstrumentPlugin[] {
 // ─── Built-ins ──────────────────────────────────────────────────────────────
 registerInstrument({ mode: "sampler", label: "SAMPLER", component: AirSampler });
 registerInstrument({ mode: "piano", label: "PIANO", component: AirPiano });
+registerInstrument({ mode: "theremin", label: "THEREMIN", component: AirTheremin });
+registerInstrument({ mode: "harp", label: "HARP", component: AirHarp });
+registerInstrument({ mode: "handpan", label: "HANDPAN", component: AirHandpan });
+registerInstrument({ mode: "kalimba", label: "KALIMBA", component: AirKalimba });

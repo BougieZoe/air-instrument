@@ -150,6 +150,7 @@ export default function AirInstrument() {
         }
         interactions.resetMissing(liveIds);
         pointsRef.current = points;
+        if (hands.length === 0) instrument.onTrackingLost?.();
       }
       frameCountRef.current += 1;
       const now = performance.now();

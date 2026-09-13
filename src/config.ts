@@ -9,6 +9,9 @@ export const GAIN_PIANO_BUS        = 0.74;
 export const GAIN_ACCOMPANIMENT_BUS = 0.66;
 export const GAIN_MASTER           = 0.84;
 export const GAIN_ACCOMPANIMENT_DEFAULT = 0.62;
+export const GAIN_AUX_BUS               = 0.85;  // theremin / harp / handpan / kalimba
+export const GAIN_REVERB_SEND           = 0.34;
+export const GAIN_REVERB_RETURN         = 0.95;
 
 // ─── Compressor ─────────────────────────────────────────────────────────────
 export const COMPRESSOR_THRESHOLD = -16; // dB
@@ -47,10 +50,13 @@ export const FIST_FOLD_MARGIN = 0.01;
 // Thumbs up: thumb extended (tip.y < wrist.y - margin), all others folded
 
 // ─── Interaction controller ──────────────────────────────────────────────────
-export const DWELL_MS          = 420;
-export const COOLDOWN_MS       = 600;
+export const DWELL_MS          = 200;   // was 420 — snappier hover trigger, entry already gates misfires
+export const COOLDOWN_MS       = 240;   // was 600 — enables ~4 hits/sec per finger (rolls), SamplePlayer debounces doubles
 export const SPEED_THRESHOLD   = 0.22;
-export const Z_THRESHOLD       = -0.04;
+// Push-in trigger, NORMALIZED by hand size: (tipZ - palmZ) / handSize.
+// Distance-independent, unlike the old raw-z threshold (-0.04) that only
+// worked at one camera distance.
+export const Z_NORM_THRESHOLD  = -0.38;
 
 // ─── Coordinate mapper (normalized 0-1 camera crop region) ──────────────────
 export const CAMERA_BOUNDS = {
@@ -74,6 +80,9 @@ export const SMOOTHING_SPEED_CEIL  = 0.55; // above this speed → use max alpha
 export const CALIBRATION_FRAMES       = 30;  // frames to average for hand size
 export const CALIBRATION_REFERENCE_SIZE = 0.22; // reference hand size (wrist→middleMCP distance)
 export const CALIBRATION_TIMEOUT_MS   = 5000;  // max time to wait for calibration
+
+// ─── Air Harp strum ──────────────────────────────────────────────────────────
+export const HARP_REFRACTORY_MS = 120;  // min time between plucks of the same string
 
 // ─── Piano hit-test insets (fraction of key width) ───────────────────────────
 export const WHITE_KEY_INSET_RATIO = 0.08;

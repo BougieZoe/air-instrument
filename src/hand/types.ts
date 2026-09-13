@@ -49,6 +49,8 @@ export type InteractionPoint = {
   x: number;
   y: number;
   z: number;
+  /** Push-in depth normalized by hand size — distance-independent. */
+  zNorm: number;
   state: InteractionState;
   gesture: GestureName;
   confidence: number;

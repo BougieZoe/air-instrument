@@ -1,4 +1,4 @@
-import { COOLDOWN_MS, DWELL_MS, SPEED_THRESHOLD, Z_THRESHOLD } from "../config";
+import { COOLDOWN_MS, DWELL_MS, SPEED_THRESHOLD, Z_NORM_THRESHOLD } from "../config";
 import type { InteractionPoint, InteractionState } from "./types";
 
 type ActivePoint = {
@@ -35,7 +35,7 @@ export class InteractionController {
       cooledDown &&
       (pinch ||
         point.speed > SPEED_THRESHOLD ||
-        point.z < Z_THRESHOLD ||
+        point.zNorm < Z_NORM_THRESHOLD ||
         dwellTime > DWELL_MS);
 
     let state: InteractionState;

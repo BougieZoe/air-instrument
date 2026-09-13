@@ -19,6 +19,9 @@ export type InstrumentHandle = {
   handleInteraction: (point: InteractionPoint, targetId: string | null) => boolean;
   /** Reset all hover/press visual states (called on mode switch). */
   reset: () => void;
+  /** Called every frame while NO hands are tracked (sustained instruments
+   * like the theremin use it to fall silent). Optional. */
+  onTrackingLost?: () => void;
 };
 
 /** Props every instrument component receives. Keep in sync — one shape for all. */

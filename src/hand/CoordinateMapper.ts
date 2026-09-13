@@ -13,7 +13,10 @@ export class CoordinateMapper {
     const yNorm = (vertical   - this.bounds.top)   / (this.bounds.bottom - this.bounds.top);
     const x = container.left + Math.max(0, Math.min(1, xNorm)) * container.width;
     const y = container.top  + Math.max(0, Math.min(1, yNorm)) * container.height;
-    return { id: `${hand.id}:f${finger}`, finger, x, y, z: tip.z, state, gesture: hand.gesture, confidence: hand.confidence, speed: hand.fingerSpeeds[finger] ?? hand.speed, timestamp: hand.timestamp };
+    // Z normalized by hand size: same physical push reads the same value
+    // whether the hand is close to the camera or far away.
+    const zNorm = hand.handSize > 0.001 ? (tip.z - hand.palm.z) / hand.handSize : 0;
+    return { id: `${hand.id}:f${finger}`, finger, x, y, z: tip.z, zNorm, state, gesture: hand.gesture, confidence: hand.confidence, speed: hand.fingerSpeeds[finger] ?? hand.speed, timestamp: hand.timestamp };
   }
 
   /** Compat: index finger only. */
