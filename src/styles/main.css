@@ -327,8 +327,8 @@ button {
 }
 
 .sampler-shell {
-  width: min(72vw, 740px);
-  padding: 20px;
+  width: min(88vw, 960px);
+  padding: 22px;
 }
 
 .instrument-title,
@@ -387,13 +387,13 @@ button {
 
 .sampler-grid {
   display: grid;
-  grid-template-columns: repeat(4, minmax(92px, 1fr));
-  gap: 12px;
+  grid-template-columns: repeat(8, minmax(82px, 1fr));
+  gap: 10px;
 }
 
 .air-pad {
   position: relative;
-  height: clamp(82px, 9vw, 118px);
+  height: clamp(72px, 8.5vw, 108px);
   overflow: hidden;
   border: 1px solid rgba(255, 249, 238, 0.22);
   border-radius: 8px;
@@ -451,13 +451,13 @@ button {
 }
 
 .piano-shell {
-  width: min(86vw, 980px);
-  padding: 18px 18px 16px;
+  width: min(92vw, 1100px);
+  padding: 20px 20px 18px;
 }
 
 .piano-frame {
   position: relative;
-  height: clamp(170px, 24vh, 260px);
+  height: clamp(200px, 30vh, 320px);
   border: 1px solid rgba(50, 48, 42, 0.22);
   border-radius: 8px;
   background: rgba(30, 29, 26, 0.22);
@@ -494,7 +494,7 @@ button {
   left: 50%;
   bottom: 16px;
   transform: translateX(-50%);
-  font-size: 10px;
+  font-size: 11px;
   letter-spacing: 0.06em;
   pointer-events: none;
 }
@@ -877,7 +877,7 @@ button {
 
   /* ── DJ Deck ── */
   .dj-shell {
-    width: min(85vw, 900px);
+    width: min(90vw, 980px);
   }
 
   .dj-decks {
@@ -978,18 +978,18 @@ button {
   .dj-pad-grid {
     display: grid;
     grid-template-columns: repeat(8, 1fr);
-    gap: 5px;
+    gap: 7px;
   }
 
   .dj-pad {
     background: rgba(255, 249, 238, 0.05);
     border: 1px solid rgba(255, 249, 238, 0.1);
-    border-radius: 5px;
+    border-radius: 6px;
     color: rgba(255, 249, 238, 0.65);
-    font-size: 8px;
+    font-size: 9px;
     font-weight: 700;
     letter-spacing: 0.04em;
-    padding: 8px 2px;
+    padding: 10px 3px;
     cursor: pointer;
     transition: background 0.12s, border-color 0.12s, transform 0.12s;
     text-transform: uppercase;

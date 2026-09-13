@@ -34,11 +34,11 @@ export interface IPianoEngine {
  *   3. Pass it to AudioEngine.loadSamplePack(pack) — the sampler reloads
  */
 export type SamplePack = {
-  /** Unique identifier, e.g. "trap-demo", "jazz-kit" */
+  /** Unique identifier, e.g. "trap-pro", "boom-bap" */
   id: string;
   /** Display name shown in the UI */
   name: string;
-  /** The 16 pad definitions, in grid order */
+  /** Pad definitions in grid order (typically 32 for MPC-style kits) */
   pads: SamplePadDefinition[];
 };
 
