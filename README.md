@@ -1,96 +1,113 @@
-# Air Instrument
+<div align="center">
 
-> Play music with your hands in the air.
+# 🎵 Air Instrument
 
-A local-first interactive music instrument that runs in your browser. Hold your hand up to the camera — your finger becomes the controller.
+**用双手在空气中演奏音乐。**
 
-**[Live Demo](https://air-instrument.vercel.app)**
+一个本地优先的浏览器音乐合成器 —— 举起手，手指就是你的控制器。
 
-![Air Instrument](https://raw.githubusercontent.com/BougieZoe/air-instrument/main/public/favicon.svg)
+[![Live Demo](https://img.shields.io/badge/LIVE-DEMO-blue?style=for-the-badge&logo=vercel&logoColor=white)](https://air-instrument-repo.vercel.app)
 
----
+![Air Instrument Screenshot](https://opencode.ai/uploads/3f4581e9f1a54f839b355c5f79a4c430)
 
-## Two instruments. No hardware required.
-
-### Air Sampler
-A floating 8×4 pad grid with 10 genre packs (320 sounds total). Point your finger at a pad and hold — it triggers. Each pack uses completely different synthesis techniques.
-
-### Air Piano
-A 3-octave polyphonic piano keyboard (C3–C6, 22 keys). Move your finger across the keys to play melodies. Import any local audio file and play along while it loops.
+</div>
 
 ---
 
-## Getting started
+## ✨ 核心特性
+
+| | |
+|---|---|
+| 🖐️ **全手追踪** | 5 根手指独立控制，支持和弦与多指鼓点 |
+| 🎹 **10 个流派** | 320 个采样 —— Trap, Boom Bap, Drill, Lo-Fi, Reggaeton, House, Glitch, 8-Bit, Beatbox, Funk |
+| 🔊 **模拟建模** | 电子管饱和、磁带压缩、电路噪声，每个采样都有模拟质感 |
+| 🎹 **钢琴合成** | 8 次谐波泛音 + 速度敏感 ADSR，不是采样，是实时合成 |
+| 🎛️ **Web MIDI** | 直接发送 MIDI 到 Ableton、FL Studio、Logic Pro |
+| 📦 **零后端** | 数据不离开你的设备，完全本地运行 |
+
+---
+
+## 🚀 快速开始
 
 ```bash
 npm install
 npm run dev
 ```
 
-Open `http://localhost:5173`, click **START**, allow camera access.
+打开 `http://localhost:5173` → 点击 **START** → 允许摄像头访问。
 
-> Hand tracking requires Chrome or a Chromium-based browser for best results.
+> 手势追踪基于 Chrome/Chromium 内核，推荐使用最新版 Chrome。
 
 ---
 
-## How it works
+## 🎮 两种乐器模式
+
+### Air Sampler
+8×4 浮动采样垫，10 个流派包，共 320 个声音。手指对准采样垫并按住即可触发，每个流派使用完全不同的合成技术。
+
+### Air Piano
+3 个八度复音钢琴键盘（C3–C6，22 个键），手指滑过琴键演奏旋律。支持导入本地音频文件作为伴奏循环播放。
+
+---
+
+## 🧠 技术架构
 
 ```
-Camera → MediaPipe Hand Landmarker → Adaptive Smoothing → Coordinate Mapping
-  → Hit Testing → Interaction State (HOVER / PRESS)
-    → Web Audio API (samples / synth / accompaniment)
+摄像头 → MediaPipe Hand Landmarker → 自适应平滑 → 坐标映射
+  → 命中检测 → 交互状态机（HOVER / PRESS）
+    → Web Audio API（采样 / 合成 / 伴奏）
 ```
 
-- **Hand tracking** — MediaPipe Tasks Vision, runs entirely on your device
-- **All 5 fingertips** — every finger is an independent interaction point (own hover / press / velocity), so chords and multi-finger drumming work out of the box
-- **Calibration** — automatic hand-size measurement at startup for accurate gesture recognition
-- **6 gestures** — pinch, point, open hand, fist, peace sign, thumbs up
-- **Analog modeling** — tube saturation, tape compression, circuit noise, bit quantization applied to every sample
-- **Audio** — Web Audio API, low-latency sample playback + 8-harmonic piano synth
-- **Web MIDI** — send note data to DAWs (Ableton, FL Studio, Logic) via Web MIDI API
-- **No backend** — everything is local, no data leaves your machine
-- **Mouse fallback** — works without a camera for testing
+**关键技术栈：**
+
+- **手势识别** — MediaPipe Tasks Vision，设备端推理
+- **自适应校准** — 自动测量手部尺寸，精确手势分类
+- **6 种手势** — 捏合、指向、张开、握拳、比耶、竖大拇指
+- **交互状态机** — 每根手指独立的悬停/按下/释放状态
+- **模拟建模** — 5 种风格（warm/hot/clean/dirty/vintage），每种流派自动匹配
+- **音频引擎** — Web Audio API，低延迟采样回放 + 实时合成
 
 ---
 
-## 10 Genre Packs
+## 🎵 10 个流派包
 
-| Pack | Character |
-|------|-----------|
-| **Trap Pro** | 808 slides, crispy hats, punchy drums |
-| **Boom Bap** | Dusty lo-fi, warm saturation, vinyl grit |
-| **Drill** | Sliding 808, rapid hats, dark textures |
-| **Lo-Fi** | Tape saturation, vinyl crackle, wow & flutter |
-| **Reggaeton** | Dembow rhythm, Latin percussion, tropical punch |
-| **House** | Four-on-the-floor, 909 drums, electronic stabs |
-| **Glitch** | Bitcrushed, granular, FM synthesis, artifacts |
-| **8-Bit** | Chiptune, square waves, arpeggios, NES |
-| **Beatbox** | Vocal percussion, formant synthesis, breath |
-| **Funk** | Slap bass, wah guitar, brass stabs, clavinet |
-
----
-
-## Stack
-
-- React 19 + TypeScript
-- Vite
-- MediaPipe Tasks Vision (Hand Land Marker)
-- Web Audio API
+| 流派 | 风格 |
+|------|------|
+| **Trap Pro** | 808 滑音、清脆 hi-hat、有力鼓组 |
+| **Boom Bap** | 复古 lo-fi、温暖饱和度、黑胶质感 |
+| **Drill** | 滑动 808、快速 hi-hat、暗黑纹理 |
+| **Lo-Fi** | 磁带饱和度、黑胶底噪、抖动 |
+| **Reggaeton** | Dembow 节奏、拉丁打击乐、热带感 |
+| **House** | 4/4 拍、909 鼓机、电子 stab |
+| **Glitch** | 比特破碎、颗粒合成、FM、故障艺术 |
+| **8-Bit** | 芯片音乐、方波、琶机、NES 风格 |
+| **Beatbox** | 人声打击乐、共振峰合成、呼吸噪声 |
+| **Funk** | Slap 贝斯、哇音吉他、铜管 stab、clavinet |
 
 ---
 
-## Import your own music
+## 🛠️ 技术栈
 
-Click **IMPORT AUDIO** to load any `.mp3`, `.wav`, or `.m4a` file. The track plays as accompaniment while you play the instruments.
-
----
-
-## Debug mode
-
-Click **◎ DEBUG** in the top-right corner to see live tracking data: FPS, detected gesture, fingertip coordinates, confidence score, and current interaction state.
+```
+React 19 + TypeScript + Vite
+MediaPipe Tasks Vision (Hand Landmarker)
+Web Audio API + Web MIDI API
+```
 
 ---
 
-## License
+## 📦 自定义音乐
+
+点击 **IMPORT AUDIO** 加载任意 `.mp3`、`.wav` 或 `.m4a` 文件，音乐将作为伴奏循环播放，你可以在上面即兴演奏。
+
+---
+
+## 🔍 调试模式
+
+点击右上角 **◎ DEBUG** 查看实时追踪数据：FPS、检测到的手势、指尖坐标、置信度分数和当前交互状态。
+
+---
+
+## 📄 License
 
 MIT
