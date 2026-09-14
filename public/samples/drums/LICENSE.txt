@@ -1,0 +1,14 @@
+DRUMS pack — real acoustic drum recordings
+==========================================
+
+Source : MuldjordKit 3 — Tama Superstar acoustic drum kit
+Author : Lars Muldjord (www.muldjord.com), recorded 2010 for the
+         Sepulchrum debut album sessions.
+Project: DrumGizmo (www.drumgizmo.org)
+License: Creative Commons Attribution 4.0 International (CC BY 4.0)
+         https://creativecommons.org/licenses/by/4.0/
+
+These 16 one-shot WAVs (kick x2, snare x2, hi-hat closed/open x2 each,
+floor/mid/hi toms, crash, china, ride, ride bell, rimshot) were selected
+and normalized from the MuldjordKit3.zip distribution. Dry, unprocessed
+samples; no copyright concerns — redistribution permitted under CC BY 4.0.

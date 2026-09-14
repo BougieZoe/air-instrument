@@ -143,54 +143,38 @@ export const funkPack: GenrePack = {
   pads: [...row(ROW1, "funk"), ...row(ROW2, "funk"), ...row(ROW3, "funk"), ...row(ROW4, "funk")],
 };
 
-// ─── DRUMS — acoustic band kit, synthesized via scripts/generateDrums.mjs ───
+// ─── DRUMS — REAL acoustic band kit ───
+// MuldjordKit (Tama Superstar acoustic kit) by Lars Muldjord, from the
+// DrumGizmo project — CC BY 4.0. Recorded 2010 for the Sepulchrum debut
+// album sessions. 16 one-shots extracted (kick x2, snare x2, hats x4, toms
+// x3, crash, china, ride + bell, rimshot).
 const DRUM_ROWS: PadTemplate[][] = [
   [
-    { id: "kick",    label: "KICK 1",  gain: 1.0 },
-    { id: "kick-2",  label: "KICK 2",  gain: 0.95 },
-    { id: "snare",   label: "SNARE 1", gain: 0.88 },
-    { id: "snare-2", label: "SNARE 2", gain: 0.85 },
-    { id: "tom-lo",  label: "TOM LO",  gain: 0.78 },
-    { id: "tom-mid", label: "TOM MID", gain: 0.74 },
-    { id: "hat-c1",  label: "HAT C1",  gain: 0.55, chokeGroup: "hat" },
-    { id: "hat-c2",  label: "HAT C2",  gain: 0.52, chokeGroup: "hat" },
+    { id: "kick",    label: "KICK 1",  gain: 1.0, chokeGroup: "kick" },
+    { id: "kick-2",  label: "KICK 2",  gain: 0.95, chokeGroup: "kick" },
+    { id: "snare",   label: "SNARE 1", gain: 0.92  },
+    { id: "snare-2", label: "SNARE 2", gain: 0.88  },
+    { id: "hat-c1",  label: "HAT C1",  gain: 0.6,  chokeGroup: "hat" },
+    { id: "hat-c2",  label: "HAT C2",  gain: 0.57, chokeGroup: "hat" },
+    { id: "tom-lo",  label: "TOM LO",  gain: 0.8   },
+    { id: "tom-mid", label: "TOM MID", gain: 0.77  },
   ],
   [
-    { id: "hat-o1",  label: "HAT O1",  gain: 0.58, chokeGroup: "hat" },
+    { id: "tom-hi",  label: "TOM HI",  gain: 0.74  },
+    { id: "hat-o1",  label: "HAT O1",  gain: 0.62, chokeGroup: "hat" },
     { id: "hat-o2",  label: "HAT O2",  gain: 0.6,  chokeGroup: "hat" },
-    { id: "tom-hi",  label: "TOM HI",  gain: 0.7  },
-    { id: "crash",   label: "CRASH",   gain: 0.72 },
-    { id: "ride",    label: "RIDE",    gain: 0.62 },
-    { id: "rim",     label: "RIM",     gain: 0.7  },
-    { id: "clap",    label: "CLAP",    gain: 0.8  },
-    { id: "perc",    label: "PERC",    gain: 0.6  },
-  ],
-  [
-    { id: "808",     label: "808",     gain: 0.94 },
-    { id: "sub",     label: "SUB",     gain: 0.9  },
-    { id: "bass",    label: "BASS",    gain: 0.85 },
-    { id: "chord",   label: "CHORD",   gain: 0.55 },
-    { id: "pad",     label: "PAD",     gain: 0.45 },
-    { id: "bell",    label: "BELL",    gain: 0.55 },
-    { id: "keys",    label: "KEYS",    gain: 0.5  },
-    { id: "organ",   label: "ORGAN",   gain: 0.48 },
-  ],
-  [
-    { id: "vox1",    label: "VOX 1",   gain: 0.6  },
-    { id: "vox2",    label: "VOX 2",   gain: 0.58 },
-    { id: "riser",   label: "RISER",   gain: 0.62 },
-    { id: "impact",  label: "IMPACT",  gain: 0.82 },
-    { id: "sweep",   label: "SWEEP",   gain: 0.55 },
-    { id: "loop",    label: "LOOP",    gain: 0.6  },
-    { id: "fx",      label: "FX",      gain: 0.55 },
-    { id: "air",     label: "AIR",     gain: 0.5  },
+    { id: "crash",   label: "CRASH",   gain: 0.75  },
+    { id: "china",   label: "CHINA",   gain: 0.72  },
+    { id: "ride",    label: "RIDE",    gain: 0.63  },
+    { id: "ride-bell", label: "RIDE BELL", gain: 0.66 },
+    { id: "rim",     label: "RIMSHOT", gain: 0.7   },
   ],
 ];
 
 export const drumsPack: GenrePack = {
   id: "drums",
   name: "DRUMS",
-  subtitle: "ACOUSTIC BAND KIT / JAZZ-TUNED SHELLS / NATURAL CYMBALS",
+  subtitle: "REAL ACOUSTIC KIT — TAMA SUPERSTAR / 2010 SESSION / CC BY 4.0",
   pads: DRUM_ROWS.flatMap((templates) => row(templates, "drums")),
 };
 

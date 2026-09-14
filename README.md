@@ -12,6 +12,14 @@ A local-first browser music synthesizer — hold your hand up, your fingers beco
 
 ---
 
+## 🎬 DRUMS Pack — Real Recordings
+
+The DRUMS genre pack uses **real recorded acoustic drums** — the
+[MuldjordKit](https://www.drumgizmo.org/wiki/doku.php?id=kits:muldjordkit) Tama
+Superstar kit by **Lars Muldjord**, recorded during the Sepulchrum debut album
+sessions (2010), distributed by the DrumGizmo project under
+[CC BY 4.0](https://creativecommons.org/licenses/by/4.0/).
+
 ## ✨ Features
 
 | | |
