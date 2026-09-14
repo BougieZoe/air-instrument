@@ -81,6 +81,13 @@ export const CALIBRATION_FRAMES       = 30;  // frames to average for hand size
 export const CALIBRATION_REFERENCE_SIZE = 0.22; // reference hand size (wrist→middleMCP distance)
 export const CALIBRATION_TIMEOUT_MS   = 5000;  // max time to wait for calibration
 
+// ─── Drum Kit (AirDrumKit) ───────────────────────────────────────────────────
+export const DRUM_VELOCITY_MIN  = 0.28;  // lightest possible hit
+// speed above this saturates at full volume (fast swing = full force)
+export const DRUM_VELOCITY_RANGE = 0.65;
+export const DRUM_FIST_BOOST    = 1.35;  // a fist is a heavy stick
+export const DRUM_GRACE_MS      = 90;    // per-pad min interval (double-hit guard)
+
 // ─── Air Harp strum ──────────────────────────────────────────────────────────
 export const HARP_REFRACTORY_MS = 120;  // min time between plucks of the same string
 

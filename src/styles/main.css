@@ -1177,3 +1177,64 @@ button {
   transform: translateX(-50%); border-radius: 50%;
   background: radial-gradient(circle, rgba(0, 0, 0, 0.85), rgba(0, 0, 0, 0.4) 70%, transparent);
 }
+
+/* ── Air Drum Kit ─────────────────────────────────────────────────────────── */
+.drumkit-shell { width: min(820px, 94vw); }
+
+.drumkit-title { flex-wrap: wrap; gap: 8px; }
+.drumkit-sticks { display: flex; gap: 6px; margin-left: auto; }
+.drumkit-sticks button {
+  padding: 6px 14px; font-size: 11px; letter-spacing: 0.05em;
+  color: rgba(255, 255, 255, 0.7); background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.22); border-radius: 999px; cursor: pointer;
+}
+.drumkit-sticks button.active { color: #fff; background: rgba(255, 255, 255, 0.22); box-shadow: 0 0 12px rgba(255, 255, 255, 0.18); }
+
+.drumkit-stage {
+  position: relative;
+  height: min(56vh, 460px);
+  margin: 0 16px 12px;
+  border-radius: 12px;
+  background:
+    linear-gradient(160deg, rgba(30, 26, 24, 0.55), rgba(12, 10, 9, 0.75)),
+    radial-gradient(ellipse at 50% 115%, rgba(60, 50, 40, 0.5), transparent 65%);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  box-shadow: inset 0 0 60px rgba(0, 0, 0, 0.5);
+}
+
+.drum-pad {
+  position: absolute;
+  display: grid; place-items: center;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: radial-gradient(circle at 36% 30%, rgba(255, 255, 255, 0.28), rgba(90, 84, 78, 0.55) 62%, rgba(24, 22, 20, 0.8));
+  cursor: pointer; user-select: none;
+  transition: filter 0.12s ease, border-color 0.12s ease;
+  padding: 0;
+}
+.drum-pad span { pointer-events: none; }
+.drum-pad-label { font-size: 10px; letter-spacing: 0.06em; color: rgba(255, 250, 240, 0.85); text-shadow: 0 1px 3px rgba(0, 0, 0, 0.7); }
+.drum-pad[data-state="hover"] { filter: brightness(1.18); border-color: rgba(255, 255, 255, 0.5); }
+.drum-pad[data-state="press"] { filter: brightness(1.5); }
+
+.drum-pad--ellipse { border-radius: 46% / 38%; }
+.drum-pad--hat {
+  border-radius: 50% / 42%;
+  background:
+    radial-gradient(circle at 35% 28%, rgba(255, 255, 255, 0.4), rgba(150, 145, 140, 0.6) 55%, rgba(60, 58, 56, 0.85)),
+    linear-gradient(#b8b3ac, #5c5751 60%, #2a2724);
+}
+.drum-pad--kick {
+  border-radius: 34% / 42%;
+  background:
+    radial-gradient(circle at 38% 28%, rgba(255, 255, 255, 0.22), rgba(95, 82, 70, 0.65) 55%, rgba(15, 12, 10, 0.9)),
+    linear-gradient(120deg, #7c6a55, #33281f);
+  border-color: rgba(255, 255, 255, 0.22);
+}
+.drum-pad--kick .drum-pad-label { font-size: 11px; font-weight: 700; }
+
+.drumkit-stage-hint {
+  position: absolute; left: 50%; bottom: 6px; transform: translateX(-50%);
+  font-size: 10px; letter-spacing: 0.08em; color: rgba(255, 255, 255, 0.4);
+  pointer-events: none; white-space: nowrap;
+}

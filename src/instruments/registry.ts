@@ -9,6 +9,7 @@
  * with register / get / list as the only API.
  */
 import { AirHarp } from "./AirHarp/AirHarp";
+import { AirDrumKit } from "./AirDrumKit/AirDrumKit";
 import { AirHandpan } from "./AirHandpan/AirHandpan";
 import { AirKalimba } from "./AirKalimba/AirKalimba";
 import { AirPiano } from "./AirPiano/AirPiano";
@@ -37,3 +38,4 @@ registerInstrument({ mode: "theremin", label: "THEREMIN", component: AirTheremin
 registerInstrument({ mode: "harp", label: "HARP", component: AirHarp });
 registerInstrument({ mode: "handpan", label: "HANDPAN", component: AirHandpan });
 registerInstrument({ mode: "kalimba", label: "KALIMBA", component: AirKalimba });
+registerInstrument({ mode: "drumkit", label: "DRUM KIT", component: AirDrumKit });
